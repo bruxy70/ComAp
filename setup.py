@@ -1,6 +1,6 @@
 import setuptools
 
-REVISION = '0.1.12'
+REVISION = '0.1.14'
 PROJECT_NAME = 'comap'
 PROJECT_AUTHORS = "Václav Chaloupka"
 PROJECT_EMAILS = 'vasek.chaloupka@hotmail.com'
@@ -23,6 +23,7 @@ setuptools.setup(
         'async_timeout',
         'requests',
         'aiofiles',
+        'timestring',
     ],
     url=PROJECT_URL,
     description=SHORT_DESCRIPTION,
