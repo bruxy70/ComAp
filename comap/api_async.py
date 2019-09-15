@@ -65,9 +65,9 @@ class comapapi_async():
     async def async_values(self,unitGuid,valueGuids=None):
         """Get Genset values"""
         if valueGuids==None:
-            response_json = await self._async_call_api('values')
+            response_json = await self._async_call_api('values',unitGuid)
         else:
-            response_json = await self._async_call_api('values',{'valueGuids':valueGuids})
+            response_json = await self._async_call_api('values',unitGuid,{'valueGuids':valueGuids})
         values = [] if response_json is None else response_json['values']
         for value in values:
             value["timeStamp"]=timestring.Date(value["timeStamp"]).date
