@@ -9,6 +9,7 @@ URL = {
     'info':    'https://api.websupervisor.net/v1/units/{}/info',
     'history': 'https://api.websupervisor.net/v1/units/{}/history',
     'files':   'https://api.websupervisor.net/v1/units/{}/files',
-    'download':'https://api.websupervisor.net/v1/units/{}/download/{}',
-    'command': 'https://api.websupervisor.net/v1/units/{}/command'
+    'command': 'https://api.websupervisor.net/v1/units/{}/command',
+    'comments':'https://api.websupervisor.net/v1/units/{}/comments',
+    'download':'https://api.websupervisor.net/v1/unit/{}/download/{}'
 }
