@@ -1,0 +1,125 @@
+"""
+comapapi library
+
+units() - list all units
+get_unit_guid(name) - find unit with name
+unit_values(unitGuid,valueGuids=None) - return genset value (or values)
+get_unit_value_guid(unitGuid,name) - find value with name
+
+"""
+import logging, json
+from datetime import datetime, date, time, timedelta
+import requests
+from .constants import URL
+
+API_KEY = 'Comap-Key'
+API_TOKEN = 'Token'
+
+_LOGGER = logging.getLogger(__name__)
+
+class ErrorGettingData(Exception):
+    """Raised when we cannot get data from API"""
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class comapapi():
+    """Constructor"""
+    def __init__(self,key,token):
+        """Setup of the czpubtran library"""
+        self._load_defaults()
+        self._api_key = key
+        self._api_token = token
+    
+    def _load_defaults(self):
+        """Erase the information"""
+        
+    def _call_api(self,api,unitGuid=None,payload={}):
+        """Call ComAp API. Return None if not succesfull"""
+        if self._api_key is None or self._api_token is None:
+            _LOGGER.error( f'API Token and Comap-Key not available!')
+            return None
+        if api not in URL:
+            _LOGGER.error( f'Unknown API {api}!')
+            return None
+        headers = {'Token':self._api_token,'Comap-Key': self._api_key}
+        try:
+            _url= URL[api] if unitGuid is None else URL[api].format(unitGuid)
+            response = requests.get(_url,headers=headers,params=payload)
+            _LOGGER.debug( f'Calling API url {response.url}')
+            if response.status_code!= 200:
+                _LOGGER.error( f'API {api} returned code: {response.status_code} ({response.reason}) ')    
+                return None
+        except Exception as e:
+            _LOGGER.error( f'API {api} error {e}')
+            return None
+        return response.json()
+
+    def units(self):
+        """Get list of all units - returns a list of xxx with two values: name,unitGuid"""
+        response_json = self._call_api('units')
+        return [] if response_json is None else response_json['units']
+
+    def values(self,unitGuid,valueGuids=None):
+        """Get Genset values"""
+        if valueGuids==None:
+            response_json = self._call_api('values',unitGuid)
+        else:
+            response_json = self._call_api('values',unitGuid,{'valueGuids':valueGuids})
+        return [] if response_json is None else response_json['values']
+
+    def info(self,unitGuid):
+        """Get Genset values"""
+        response_json = self._call_api('info',unitGuid)
+        return [] if response_json is None else response_json
+
+    def history(self,unitGuid,_from=None,_to=None,valueGuids=None):
+        """Get Genset history"""
+        payload={}
+        if _from is not None: payload['from'] = _from
+        if _to is not None: payload['to'] = _to
+        if valueGuids is not None: payload['valueGuids'] = valueGuids 
+        response_json = self._call_api('history',unitGuid,payload)
+        return [] if response_json is None else response_json['values']
+
+    def files(self,unitGuid):
+        """Get Genset files"""
+        response_json = self._call_api('files',unitGuid)
+        return [] if response_json is None else response_json['files']
+
+    def get_unit_guid(self,name):
+        """Find GUID for unit name"""
+        unit = next((unit for unit in self.units() if unit['name']==name),None)
+        return None if unit==None else unit['unitGuid']
+
+    def get_value_guid(self,unitGuid,name):
+        """Find guid of a value"""
+        value = next((value for value in self.values(unitGuid) if value['name']==name),None)
+        return None if value==None else value['valueGuid']
+
+    def download(self,unitGuid,fileName,path=None):
+        "download file"
+        if self._api_key is None or self._api_token is None:
+            _LOGGER.error( f'API Token and Comap-Key not available!')
+            return False
+        headers = {'Token':self._api_token,'Comap-Key': self._api_key}
+        try:
+            api='download'
+            _url= URL[api].format(unitGuid,fileName)
+            response = requests.get(_url,headers=headers)
+            if response.status_code!= 200:
+                _LOGGER.error( f'API {api} returned code: {response.status_code} ({response.reason}) ')    
+                return False
+            _LOGGER.debug( f'Calling API url {response.url}')
+            with open(fileName if path is None else f'{path}/{fileName}', 'wb') as f:
+                f.write(response.content)
+        except Exception as e:
+            _LOGGER.error( f'API {api} error {e}')
+            return False
+        return True
+        
+    def authenticate(self):
+        return
+
+    """Properties"""
