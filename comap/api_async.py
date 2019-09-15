@@ -3,6 +3,7 @@ comap.api_async module
 """
 import logging, json
 import os
+import aiofiles
 from datetime import datetime, date, time, timedelta
 import asyncio
 import aiohttp
@@ -68,7 +69,7 @@ class comapapi_async():
             response_json = await self._async_call_api('values',{'valueGuids':valueGuids})
         return [] if response_json is None else response_json['values']
 
-    def comments(self,unitGuid):
+    async def comments(self,unitGuid):
         """Get Genset comments"""
         response_json = await self._async_call_api('comments',unitGuid)
         return [] if response_json is None else response_json['comments']
@@ -131,9 +132,10 @@ class comapapi_async():
             if response.status!= 200:
                 _LOGGER.error( f'API {api} returned code: {response.code} ({response.status}) ')    
                 return False
-            with open(os.path.join(path,fileName), 'wb') as f:
-                f.write(response.content)
-            f.close()
+            f = await aiofiles.open(os.path.join(path,fileName), mode='wb')
+            await f.write(await response.read())
+            await f.close()            
+            return True
         except (asyncio.TimeoutError):
             _LOGGER.error( f'API {api} response timeout')
             return False
