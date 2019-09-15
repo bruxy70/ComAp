@@ -5,6 +5,7 @@ import logging, json
 import os
 from datetime import datetime, date, time, timedelta
 import requests
+import timestring
 from .constants import URL
 
 API_KEY = 'Comap-Key'
@@ -58,7 +59,11 @@ class comapapi():
             response_json = self._call_api('values',unitGuid)
         else:
             response_json = self._call_api('values',unitGuid,{'valueGuids':valueGuids})
-        return [] if response_json is None else response_json['values']
+        values = [] if response_json is None else response_json['values']
+        for value in values:
+            value["timeStamp"]=timestring.Date(value["timeStamp"]).date
+        return values
+
 
     def info(self,unitGuid):
         """Get Genset info"""
@@ -68,7 +73,10 @@ class comapapi():
     def comments(self,unitGuid):
         """Get Genset comments"""
         response_json = self._call_api('comments',unitGuid)
-        return [] if response_json is None else response_json['comments']
+        comments = [] if response_json is None else response_json['comments']
+        for comment in comments:
+            comment["date"]=timestring.Date(comment["date"]).date
+        return comments
 
     def history(self,unitGuid,_from=None,_to=None,valueGuids=None):
         """Get Genset history"""
@@ -77,12 +85,19 @@ class comapapi():
         if _to is not None: payload['to'] = _to
         if valueGuids is not None: payload['valueGuids'] = valueGuids 
         response_json = self._call_api('history',unitGuid,payload=payload)
-        return [] if response_json is None else response_json['values']
+        values = [] if response_json is None else response_json['values']
+        for value in values:
+            for entry in value["history"]:
+                entry["validTo"]=timestring.Date(entry["validTo"]).date
+        return values
 
     def files(self,unitGuid):
         """Get Genset files"""
         response_json = self._call_api('files',unitGuid)
-        return [] if response_json is None else response_json['files']
+        files=[] if response_json is None else response_json['files']
+        for file in files:
+            file["generated"]=timestring.Date(file["generated"]).date
+        return files
 
     def authenticate(self,username,password):
         if self._api_key is None:

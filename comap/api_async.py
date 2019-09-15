@@ -8,6 +8,7 @@ from datetime import datetime, date, time, timedelta
 import asyncio
 import aiohttp
 import async_timeout
+import timestring
 from .constants import URL
 
 HTTP_TIMEOUT = 10
@@ -67,12 +68,18 @@ class comapapi_async():
             response_json = await self._async_call_api('values')
         else:
             response_json = await self._async_call_api('values',{'valueGuids':valueGuids})
-        return [] if response_json is None else response_json['values']
+        values = [] if response_json is None else response_json['values']
+        for value in values:
+            value["timeStamp"]=timestring.Date(value["timeStamp"]).date
+        return values
 
     async def comments(self,unitGuid):
         """Get Genset comments"""
         response_json = await self._async_call_api('comments',unitGuid)
-        return [] if response_json is None else response_json['comments']
+        comments = [] if response_json is None else response_json['comments']
+        for comment in comments:
+            comment["date"]=timestring.Date(comment["date"]).date
+        return comments
 
     async def async_info(self,unitGuid):
         """Get Genset info"""
@@ -86,12 +93,19 @@ class comapapi_async():
         if _to is not None: payload['to'] = _to
         if valueGuids is not None: payload['valueGuids'] = valueGuids 
         response_json = await self._async_call_api('history',unitGuid,payload)
-        return [] if response_json is None else response_json['values']
+        values = [] if response_json is None else response_json['values']
+        for value in values:
+            for entry in value["history"]:
+                entry["validTo"]=timestring.Date(entry["validTo"]).date
+        return values
 
     async def async_files(self,unitGuid):
         """Get Genset files"""
         response_json = await self._async_call_api('files',unitGuid)
-        return [] if response_json is None else response_json['files']
+        files=[] if response_json is None else response_json['files']
+        for file in files:
+            file["generated"]=timestring.Date(file["generated"]).date
+        return files
 
     async def async_authenticate(self,username,password):
         """Get Authentication Token"""
