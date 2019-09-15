@@ -80,7 +80,7 @@ class comapapi():
         if _from is not None: payload['from'] = _from
         if _to is not None: payload['to'] = _to
         if valueGuids is not None: payload['valueGuids'] = valueGuids 
-        response_json = self._call_api('history',unitGuid,payload)
+        response_json = self._call_api('history',unitGuid,payload=payload)
         return [] if response_json is None else response_json['values']
 
     def files(self,unitGuid):
@@ -97,6 +97,27 @@ class comapapi():
         """Find guid of a value"""
         value = next((value for value in self.values(unitGuid) if value['name']==name),None)
         return None if value==None else value['valueGuid']
+
+    def authenticate(self,username,password):
+        if self._api_key is None:
+            _LOGGER.error( f'API Comap-Key not available!')
+            return None
+        api="authenticate"
+        headers = {'Comap-Key': self._api_key}
+        body={'username':username,'password':password}
+        try:
+            _url= URL[api]
+            response = requests.get(_url,headers=headers,data=body)
+            _LOGGER.debug( f'Calling API url {response.url}')
+            if response.status_code!= 200:
+                _LOGGER.error( f'API {api} returned code: {response.status_code} ({response.reason}) ')    
+                return None
+        except Exception as e:
+            _LOGGER.error( f'API {api} error {e}')
+            return None
+        response_json=response.json()
+        self._api_token = '' if response_json is None else response_json['applicationToken']
+        return self._api_token
 
     def download(self,unitGuid,fileName,path=None):
         "download file"
@@ -118,8 +139,27 @@ class comapapi():
             _LOGGER.error( f'API {api} error {e}')
             return False
         return True
-        
-    def authenticate(self):
-        return
+
+    def command(self,unitGuid,command,mode=None):
+        "send command"
+        if self._api_key is None or self._api_token is None:
+            _LOGGER.error( f'API Token and Comap-Key not available!')
+            return False
+        headers = {'Token':self._api_token,'Comap-Key': self._api_key}
+        body={'command':command}
+        if command=='mode': body['mode']=mode
+        try:
+            api='command'
+            _url= URL[api].format(unitGuid)
+            response = requests.post(_url,headers=headers,data=body)
+            if response.status_code!= 200:
+                _LOGGER.error( f'API {api} returned code: {response.status_code} ({response.reason}) ')    
+                return False
+            _LOGGER.debug( f'Calling API url {response.url}')
+        except Exception as e:
+            _LOGGER.error( f'API {api} error {e}')
+            return False
+        return True
+
 
     """Properties"""
