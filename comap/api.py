@@ -20,7 +20,7 @@ class ErrorGettingData(Exception):
     def __str__(self):
         return repr(self.value)
 
-class comapapi():
+class wsv():
     """Constructor"""
     def __init__(self,key,token=''):
         """Setup of the czpubtran library"""
