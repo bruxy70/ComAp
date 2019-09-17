@@ -24,8 +24,7 @@ class ErrorGettingData(Exception):
     def __str__(self):
         return repr(self.value)
 
-class comapapi_async():
-    
+class wsv_async():
     """Constructor"""
     def __init__(self, session,key,token=''):
         """Setup of the czpubtran library"""

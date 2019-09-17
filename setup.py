@@ -1,7 +1,7 @@
 import setuptools
 
-REVISION = '0.1.15'
-PROJECT_NAME = 'comap'
+REVISION = '0.0.3'
+PROJECT_NAME = 'comap-api'
 PROJECT_AUTHORS = "Václav Chaloupka"
 PROJECT_EMAILS = 'vasek.chaloupka@hotmail.com'
 PROJECT_URL = "https://github.com/bruxy70/ComAp"
