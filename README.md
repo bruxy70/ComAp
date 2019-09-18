@@ -14,7 +14,8 @@ For better understanding, please look at the examples on the [ComAp-API reposito
 Use the API ``ComAp-Key`` and ``Token`` to inicialize the object. Example:
 ```python
 from comap.api import wsv
-from config import ComAp-Key,Token # It is a good practice not to store your API secrets in code, but in an external file
+# Do not store your API secrets in code, but in an external file
+from config import ComAp-Key,Token
 
 wsv=wsv(ComAp-Key,Token)
 units=wsv.units()
