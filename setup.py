@@ -1,6 +1,6 @@
 import setuptools
 
-REVISION = '0.0.3'
+REVISION = '0.0.4'
 PROJECT_NAME = 'comap-api'
 PROJECT_AUTHORS = "Václav Chaloupka"
 PROJECT_EMAILS = 'vasek.chaloupka@hotmail.com'

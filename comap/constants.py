@@ -11,7 +11,7 @@ URL = {
     'files':   'https://api.websupervisor.net/v1/units/{}/files',
     'command': 'https://api.websupervisor.net/v1/units/{}/command',
     'comments':'https://api.websupervisor.net/v1/units/{}/comments',
-    'download':'https://api.websupervisor.net/v1/unit/{}/download/{}'
+    'download':'https://api.websupervisor.net/v1/units/{}/download/{}'
 }
 
 VALUE_GUID = {
