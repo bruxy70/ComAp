@@ -178,22 +178,22 @@ class wsv():
         "get list of groups"
         if self._api_token is None:
             _LOGGER.error( f'API Token not available!')
-            return False
-        body={'cred': {'t':self._api_token},'count':100,'gt':groupType,'offset':0}
+            return []
+        body={'cred': {'at':self._api_token},'count':100,'gt':groupType,'offset':0}
         try:
             _url= 'https://www.websupervisor.net/api/api.svc/get/groups'
             response = requests.post(_url,json=body)
             if response.status_code!= 200:
                 _LOGGER.error( f'API get/groups returned code: {response.status_code} ({response.reason}) ')    
-                return False
+                return []
             response_json = response.json()
             if int(response_json['ec'])!= 200:
                 _LOGGER.error( f'API get/groups returned code: {response_json["ec"]}')    
-                return False
+                return []
             _LOGGER.debug( f'Calling API url {response.url}')
         except Exception as e:
             _LOGGER.error( f'API get/groups error {e}')
-            return False
+            return []
         groups=[]
         for g in response_json['groups']:
             groups.append({'name':g['name'],
