@@ -190,35 +190,3 @@ class wsv_async():
         """Find guid of a value"""
         value = next((value for value in await self.async_values(unitGuid) if value['name'].find(name)>=0),None)
         return None if value==None else value['valueGuid']
-
-    def groups(self,groupType=None):
-        "get list of groups"
-        if self._api_token is None:
-            _LOGGER.error( f'API Token not available!')
-            return []
-        body={'cred': {'at':self._api_token},'count':100,'gt':groupType,'offset':0}
-        try:
-            _url= 'https://www.websupervisor.net/api/api.svc/get/groups'
-            with async_timeout.timeout(HTTP_TIMEOUT):            
-                response = await self._session.post(_url,json=body)
-            if response.status_code!= 200:
-                _LOGGER.error( f'API get/groups returned code: {response.status_code} ({response.reason}) ')    
-                return []
-            response_json = await response.json()
-            if int(response_json['ec'])!= 200:
-                _LOGGER.error( f'API get/groups returned code: {response_json["ec"]}')    
-                return []
-            _LOGGER.debug( f'Calling API url {response.url}')
-        except (asyncio.TimeoutError):
-            _LOGGER.error( f'API get/groups response timeout')
-            return []
-        except Exception as e:
-            _LOGGER.error( f'API get/groups error {e}')
-            return []
-        groups=[]
-        for g in response_json['groups']:
-            groups.append({'name':g['name'],
-                           'guid':g['guid'],
-                           'unitGuids':g['unitGuids']
-            })    
-        return groups

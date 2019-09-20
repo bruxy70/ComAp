@@ -1,6 +1,6 @@
 import setuptools
 
-REVISION = '0.2.3'
+REVISION = '0.2.4'
 PROJECT_NAME = 'comap'
 PROJECT_AUTHORS = "Václav Chaloupka"
 PROJECT_EMAILS = 'vasek.chaloupka@hotmail.com'
