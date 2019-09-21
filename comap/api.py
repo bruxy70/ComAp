@@ -34,10 +34,10 @@ class wsv():
     def _call_api(self, api, unitGuid=None, payload={}):
         """Call ComAp API. Return None if not succesfull"""
         if self._api_key is None or self._api_token is None:
-            _LOGGER.error( f'API Token and Comap-Key not available!')
+            _LOGGER.error(f'API Token and Comap-Key not available!')
             return None
         if api not in URL:
-            _LOGGER.error( f'Unknown API {api}!')
+            _LOGGER.error(f'Unknown API {api}!')
             return None
         headers = {API_TOKEN: self._api_token, API_KEY: self._api_key}
         try:
@@ -64,7 +64,7 @@ class wsv():
     def values(self, unitGuid, valueGuids=None):
         """Get Genset values"""
         if valueGuids is None:
-            response_json = self._call_api('values',unitGuid)
+            response_json = self._call_api('values', unitGuid)
         else:
             response_json = self._call_api(
                 'values',
@@ -73,26 +73,26 @@ class wsv():
             )
         values = [] if response_json is None else response_json['values']
         for value in values:
-            value["timeStamp"]=timestring.Date(value["timeStamp"]).date
+            value["timeStamp"] = timestring.Date(value["timeStamp"]).date
         return values
 
     def info(self, unitGuid):
         """Get Genset info"""
-        response_json = self._call_api('info',unitGuid)
+        response_json = self._call_api('info', unitGuid)
         return [] if response_json is None else response_json
 
     def comments(self, unitGuid):
         """Get Genset comments"""
-        response_json = self._call_api('comments',unitGuid)
+        response_json = self._call_api('comments', unitGuid)
         comments = [] if response_json is None else response_json['comments']
         for comment in comments:
-            comment["date"]=timestring.Date(comment["date"]).date
+            comment["date"] = timestring.Date(comment["date"]).date
         return comments
 
     def history(self, unitGuid, _from=None, _to=None, valueGuids=None):
         """Get Genset history"""
         payload = {}
-        if _from is not None: 
+        if _from is not None:
             payload['from'] = _from
         if _to is not None:
             payload['to'] = _to
@@ -107,7 +107,7 @@ class wsv():
 
     def files(self, unitGuid):
         """Get Genset files"""
-        response_json = self._call_api('files',unitGuid)
+        response_json = self._call_api('files', unitGuid)
         files = [] if response_json is None else response_json['files']
         for file in files:
             file["generated"] = timestring.Date(file["generated"]).date
@@ -115,7 +115,7 @@ class wsv():
 
     def authenticate(self, username, password):
         if self._api_key is None:
-            _LOGGER.error( f'API Comap-Key not available!')
+            _LOGGER.error(f'API Comap-Key not available!')
             return None
         api = "authenticate"
         headers = {API_KEY: self._api_key, 'Content-Type': 'application/json'}
@@ -123,7 +123,7 @@ class wsv():
         try:
             _url = URL[api]
             response = requests.post(_url, headers=headers, json=body)
-            _LOGGER.debug( f'Calling API url {response.url}')
+            _LOGGER.debug(f'Calling API url {response.url}')
             if response.status_code != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
@@ -131,7 +131,7 @@ class wsv():
                     f'({response.reason})')
                 return None
         except Exception as e:
-            _LOGGER.error( f'API {api} error {e}')
+            _LOGGER.error(f'API {api} error {e}')
             return None
         response_json = response.json()
         self._api_token = '' if response_json is None else response_json['applicationToken']
@@ -140,7 +140,7 @@ class wsv():
     def download(self, unitGuid, fileName, path=''):
         "download file"
         if self._api_key is None or self._api_token is None:
-            _LOGGER.error( f'API Token and Comap-Key not available!')
+            _LOGGER.error(f'API Token and Comap-Key not available!')
             return False
         headers = {API_TOKEN: self._api_token, API_KEY: self._api_key}
         try:
@@ -154,19 +154,19 @@ class wsv():
                     f'{response.status_code} '
                     f'({response.reason})')
                 return False
-            _LOGGER.debug( f'Calling API url {response.url}')
+            _LOGGER.debug(f'Calling API url {response.url}')
             with open(os.path.join(path, fileName), 'wb') as f:
                 f.write(response.content)
             f.close()
         except Exception as e:
-            _LOGGER.error( f'API {api} error {e}')
+            _LOGGER.error(f'API {api} error {e}')
             return False
         return True
 
-    def command(self, unitGuid, command,mode=None):
+    def command(self, unitGuid, command, mode=None):
         "send command"
         if self._api_key is None or self._api_token is None:
-            _LOGGER.error( f'API Token and Comap-Key not available!')
+            _LOGGER.error(f'API Token and Comap-Key not available!')
             return False
         headers = {
             API_TOKEN: self._api_token,
@@ -194,7 +194,7 @@ class wsv():
     def get_unit_guid(self, name):
         """Find GUID for unit name"""
         unit = next((unit for unit in self.units() if unit['name'].find(name) >= 0), None)
-        return None if unit = =None else unit['unitGuid']
+        return None if unit is None else unit['unitGuid']
 
     def get_value_guid(self, unitGuid, name):
         """Find guid of a value"""
