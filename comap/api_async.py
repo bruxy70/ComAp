@@ -92,6 +92,14 @@ class wsv_async():
         response_json = await self._async_call_api('info', unitGuid)
         return [] if response_json is None else response_json
 
+    async def async_comments(self, unitGuid):
+        """Get Genset comments"""
+        response_json = await self._async_call_api('comments', unitGuid)
+        comments = [] if response_json is None else response_json['comments']
+        for comment in comments:
+            comment["date"] = timestring.Date(comment["date"]).date
+        return comments
+
     async def async_history(self, unitGuid, _from=None, _to=None, valueGuids=None):
         """Get Genset history"""
         payload = {}

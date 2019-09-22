@@ -1,6 +1,6 @@
 import setuptools
 
-REVISION = '0.2.8'
+REVISION = '0.2.10'
 PROJECT_NAME = 'comap'
 PROJECT_AUTHORS = "Václav Chaloupka"
 PROJECT_EMAILS = 'vasek.chaloupka@hotmail.com'
@@ -11,13 +11,13 @@ with open("README.md", "r") as fh:
     LONG = fh.read()
 
 setuptools.setup(
-    name = PROJECT_NAME.lower(),
-    python_requires = ">=3.6.0",
-    version = REVISION,
-    author = PROJECT_AUTHORS,
-    author_email = PROJECT_EMAILS,
-    packages = setuptools.find_packages(exclude=('config.py',)),
-    install_requires = [
+    name=PROJECT_NAME.lower(),
+    python_requires=">=3.6.0",
+    version=REVISION,
+    author=PROJECT_AUTHORS,
+    author_email=PROJECT_EMAILS,
+    packages=setuptools.find_packages(exclude=('config.py',)),
+    install_requires=[
         'asyncio',
         'aiohttp',
         'async_timeout',
@@ -25,12 +25,12 @@ setuptools.setup(
         'aiofiles',
         'timestring',
     ],
-    url = PROJECT_URL,
-    description = SHORT_DESCRIPTION,
-    long_description = LONG,
-    long_description_content_type = "text/markdown",
-    license = 'MIT',
-    classifiers = [
+    url=PROJECT_URL,
+    description=SHORT_DESCRIPTION,
+    long_description=LONG,
+    long_description_content_type="text/markdown",
+    license='MIT',
+    classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
