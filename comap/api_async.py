@@ -191,7 +191,7 @@ class wsv_async():
             'Content-Type': 'application/json'
         }
         body = {'command': command}
-        if command == 'mode':
+        if mode is not None:
             body['mode'] = mode
         try:
             api = 'command'

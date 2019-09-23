@@ -173,7 +173,7 @@ class wsv():
             API_KEY: self._api_key,
             'Content-Type': 'application/json'}
         body = {'command': command}
-        if command == 'mode':
+        if mode is not None:
             body['mode'] = mode
         try:
             api = 'command'
