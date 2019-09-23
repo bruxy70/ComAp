@@ -198,11 +198,11 @@ class wsv_async():
             _url = URL[api].format(unitGuid)
             with async_timeout.timeout(HTTP_TIMEOUT):
                 response = await self._session.post(_url, headers=headers, json=body)
-            if response.status_code != 200:
+            if response.status != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
-                    f'{response.status_code} '
-                    f'({response.reason})')
+                    f'{response.code} '
+                    f'({response.status})')
                 return False
             _LOGGER.debug(f'Calling API url {response.url}')
         except (asyncio.TimeoutError):
