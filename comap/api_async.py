@@ -32,23 +32,23 @@ class wsv_async():
     """Constructor"""
     def __init__(self, session, key, token=''):
         """Setup of the czpubtran library"""
-        self._api_key = key
-        self._api_token = token
-        self._session = session
+        self.__api_key = key
+        self.__api_token = token
+        self.__session = session
 
-    async def _async_call_api(self, api, unitGuid=None, payload={}):
+    async def __async_call_api(self, api, unitGuid=None, payload={}):
         """Call ComAp API. Return None if not succesfull"""
-        if self._api_key is None or self._api_token is None:
+        if self.__api_key is None or self.__api_token is None:
             _LOGGER.error(f'API Token and Comap-Key not available!')
             return None
         if api not in URL:
             _LOGGER.error(f'Unknown API {api}!')
             return None
-        headers = {API_TOKEN: self._api_token, API_KEY: self._api_key}
+        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
             _url = URL[api] if unitGuid is None else URL[api].format(unitGuid)
             with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self._session.get(_url, headers=headers, params=payload)
+                response = await self.__session.get(_url, headers=headers, params=payload)
             if response.status != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
@@ -65,15 +65,15 @@ class wsv_async():
 
     async def async_units(self):
         """Get list of all units - returns a list of xxx with two values: name, unitGuid"""
-        response_json = await self._async_call_api('units')
+        response_json = await self.__async_call_api('units')
         return [] if response_json is None else response_json['units']
 
     async def async_values(self, unitGuid, valueGuids=None):
         """Get Genset values"""
         if valueGuids is None:
-            response_json = await self._async_call_api('values', unitGuid)
+            response_json = await self.__async_call_api('values', unitGuid)
         else:
-            response_json = await self._async_call_api('values', unitGuid, {'valueGuids': valueGuids})
+            response_json = await self.__async_call_api('values', unitGuid, {'valueGuids': valueGuids})
         values = [] if response_json is None else response_json['values']
         for value in values:
             value["timeStamp"] = timestring.Date(value["timeStamp"]).date
@@ -81,7 +81,7 @@ class wsv_async():
 
     async def comments(self, unitGuid):
         """Get Genset comments"""
-        response_json = await self._async_call_api('comments', unitGuid)
+        response_json = await self.__async_call_api('comments', unitGuid)
         comments = [] if response_json is None else response_json['comments']
         for comment in comments:
             comment["date"] = timestring.Date(comment["date"]).date
@@ -89,12 +89,12 @@ class wsv_async():
 
     async def async_info(self, unitGuid):
         """Get Genset info"""
-        response_json = await self._async_call_api('info', unitGuid)
+        response_json = await self.__async_call_api('info', unitGuid)
         return [] if response_json is None else response_json
 
     async def async_comments(self, unitGuid):
         """Get Genset comments"""
-        response_json = await self._async_call_api('comments', unitGuid)
+        response_json = await self.__async_call_api('comments', unitGuid)
         comments = [] if response_json is None else response_json['comments']
         for comment in comments:
             comment["date"] = timestring.Date(comment["date"]).date
@@ -109,7 +109,7 @@ class wsv_async():
             payload['to'] = _to
         if valueGuids is not None:
             payload['valueGuids'] = valueGuids
-        response_json = await self._async_call_api('history', unitGuid, payload)
+        response_json = await self.__async_call_api('history', unitGuid, payload)
         values = [] if response_json is None else response_json['values']
         for value in values:
             for entry in value["history"]:
@@ -118,7 +118,7 @@ class wsv_async():
 
     async def async_files(self, unitGuid):
         """Get Genset files"""
-        response_json = await self._async_call_api('files', unitGuid)
+        response_json = await self.__async_call_api('files', unitGuid)
         files = [] if response_json is None else response_json['files']
         for file in files:
             file["generated"] = timestring.Date(file["generated"]).date
@@ -126,16 +126,16 @@ class wsv_async():
 
     async def async_authenticate(self, username, password):
         """Get Authentication Token"""
-        if self._api_key is None:
+        if self.__api_key is None:
             _LOGGER.error(f'API Comap-Key not available!')
             return None
         api = "authenticate"
-        headers = {API_KEY: self._api_key, 'Content-Type': 'application/json'}
+        headers = {API_KEY: self.__api_key, 'Content-Type': 'application/json'}
         body = {'username': username, 'password': password}
         try:
             _url = URL[api]
             with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self._session.post(_url, headers=headers, json=body)
+                response = await self.__session.post(_url, headers=headers, json=body)
             if response.status != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
@@ -149,20 +149,20 @@ class wsv_async():
             _LOGGER.error(f'API {api} error {e}')
             return None
         response_json = await response.json()
-        self._api_token = '' if response_json is None else response_json['applicationToken']
-        return self._api_token
+        self.__api_token = '' if response_json is None else response_json['applicationToken']
+        return self.__api_token
 
     async def async_download(self, unitGuid, fileName, path=''):
         "download file"
-        if self._api_key is None or self._api_token is None:
+        if self.__api_key is None or self.__api_token is None:
             _LOGGER.error(f'API Token and Comap-Key not available!')
             return False
-        headers = {API_TOKEN: self._api_token, API_KEY: self._api_key}
+        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
             api = 'download'
             _url = URL[api].format(unitGuid, fileName)
             with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self._session.get(_url, headers=headers)
+                response = await self.__session.get(_url, headers=headers)
             if response.status != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
@@ -182,12 +182,12 @@ class wsv_async():
 
     async def async_command(self, unitGuid, command, mode=None):
         "send command"
-        if self._api_key is None or self._api_token is None:
+        if self.__api_key is None or self.__api_token is None:
             _LOGGER.error(f'API Token and Comap-Key not available!')
             return False
         headers = {
-            API_TOKEN: self._api_token,
-            API_KEY: self._api_key,
+            API_TOKEN: self.__api_token,
+            API_KEY: self.__api_key,
             'Content-Type': 'application/json'
         }
         body = {'command': command}
@@ -197,7 +197,7 @@ class wsv_async():
             api = 'command'
             _url = URL[api].format(unitGuid)
             with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self._session.post(_url, headers=headers, json=body)
+                response = await self.__session.post(_url, headers=headers, json=body)
             if response.status != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
