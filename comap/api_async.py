@@ -50,10 +50,11 @@ class wsv_async():
             with async_timeout.timeout(HTTP_TIMEOUT):
                 response = await self.__session.get(_url, headers=headers, params=payload)
             if response.status != 200:
+                response_text = await response.text()
                 _LOGGER.error(
                     f'API {api} returned code: '
-                    f'{response.code} '
-                    f'({response.status})')
+                    f'{response.status} '
+                    f'({response_text})')
                 return None
         except (asyncio.TimeoutError):
             _LOGGER.error(f'API {api} response timeout')
@@ -137,10 +138,11 @@ class wsv_async():
             with async_timeout.timeout(HTTP_TIMEOUT):
                 response = await self.__session.post(_url, headers=headers, json=body)
             if response.status != 200:
+                response_text = await response.text()
                 _LOGGER.error(
                     f'API {api} returned code: '
-                    f'{response.code} '
-                    f'({response.status})')
+                    f'{response.status} '
+                    f'({response_text})')
                 return None
         except (asyncio.TimeoutError):
             _LOGGER.error(f'API {api} response timeout')
@@ -164,11 +166,12 @@ class wsv_async():
             with async_timeout.timeout(HTTP_TIMEOUT):
                 response = await self.__session.get(_url, headers=headers)
             if response.status != 200:
+                response_text = await response.text()
                 _LOGGER.error(
                     f'API {api} returned code: '
-                    f'{response.code} '
-                    f'({response.status})')
-                return False
+                    f'{response.status} '
+                    f'({response_text})')
+                return None
             f = await aiofiles.open(os.path.join(path, fileName), mode='wb')
             await f.write(await response.read())
             await f.close()
@@ -199,11 +202,12 @@ class wsv_async():
             with async_timeout.timeout(HTTP_TIMEOUT):
                 response = await self.__session.post(_url, headers=headers, json=body)
             if response.status != 200:
+                response_text = await response.text()
                 _LOGGER.error(
                     f'API {api} returned code: '
-                    f'{response.code} '
-                    f'({response.status})')
-                return False
+                    f'{response.status} '
+                    f'({response_text})')
+                return None
             _LOGGER.debug(f'Calling API url {response.url}')
         except (asyncio.TimeoutError):
             _LOGGER.error(f'API {api} response timeout')
