@@ -28,18 +28,18 @@ class wsv():
     """Constructor"""
     def __init__(self, key, token=''):
         """Setup of the czpubtran library"""
-        self._api_key = key
-        self._api_token = token
+        self.__api_key = key
+        self.__api_token = token
 
-    def _call_api(self, api, unitGuid=None, payload={}):
+    def __call_api(self, api, unitGuid=None, payload={}):
         """Call ComAp API. Return None if not succesfull"""
-        if self._api_key is None or self._api_token is None:
+        if self.__api_key is None or self.__api_token is None:
             _LOGGER.error(f'API Token and Comap-Key not available!')
             return None
         if api not in URL:
             _LOGGER.error(f'Unknown API {api}!')
             return None
-        headers = {API_TOKEN: self._api_token, API_KEY: self._api_key}
+        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
             _url = URL[api] if unitGuid is None else URL[api].format(unitGuid)
             response = requests.get(_url, headers=headers, params=payload)
@@ -58,15 +58,15 @@ class wsv():
 
     def units(self):
         """Get list of all units - returns a list of xxx with two values: name, unitGuid"""
-        response_json = self._call_api('units')
+        response_json = self.__call_api('units')
         return [] if response_json is None else response_json['units']
 
     def values(self, unitGuid, valueGuids=None):
         """Get Genset values"""
         if valueGuids is None:
-            response_json = self._call_api('values', unitGuid)
+            response_json = self.__call_api('values', unitGuid)
         else:
-            response_json = self._call_api(
+            response_json = self.__call_api(
                 'values',
                 unitGuid,
                 {'valueGuids': valueGuids}
@@ -78,12 +78,12 @@ class wsv():
 
     def info(self, unitGuid):
         """Get Genset info"""
-        response_json = self._call_api('info', unitGuid)
+        response_json = self.__call_api('info', unitGuid)
         return [] if response_json is None else response_json
 
     def comments(self, unitGuid):
         """Get Genset comments"""
-        response_json = self._call_api('comments', unitGuid)
+        response_json = self.__call_api('comments', unitGuid)
         comments = [] if response_json is None else response_json['comments']
         for comment in comments:
             comment["date"] = timestring.Date(comment["date"]).date
@@ -98,7 +98,7 @@ class wsv():
             payload['to'] = _to
         if valueGuids is not None:
             payload['valueGuids'] = valueGuids
-        response_json = self._call_api('history', unitGuid, payload=payload)
+        response_json = self.__call_api('history', unitGuid, payload=payload)
         values = [] if response_json is None else response_json['values']
         for value in values:
             for entry in value["history"]:
@@ -107,18 +107,18 @@ class wsv():
 
     def files(self, unitGuid):
         """Get Genset files"""
-        response_json = self._call_api('files', unitGuid)
+        response_json = self.__call_api('files', unitGuid)
         files = [] if response_json is None else response_json['files']
         for file in files:
             file["generated"] = timestring.Date(file["generated"]).date
         return files
 
     def authenticate(self, username, password):
-        if self._api_key is None:
+        if self.__api_key is None:
             _LOGGER.error(f'API Comap-Key not available!')
             return None
         api = "authenticate"
-        headers = {API_KEY: self._api_key, 'Content-Type': 'application/json'}
+        headers = {API_KEY: self.__api_key, 'Content-Type': 'application/json'}
         body = {'username': username, 'password': password}
         try:
             _url = URL[api]
@@ -134,15 +134,15 @@ class wsv():
             _LOGGER.error(f'API {api} error {e}')
             return None
         response_json = response.json()
-        self._api_token = '' if response_json is None else response_json['applicationToken']
-        return self._api_token
+        self.__api_token = '' if response_json is None else response_json['applicationToken']
+        return self.__api_token
 
     def download(self, unitGuid, fileName, path=''):
         "download file"
-        if self._api_key is None or self._api_token is None:
+        if self.__api_key is None or self.__api_token is None:
             _LOGGER.error(f'API Token and Comap-Key not available!')
             return False
-        headers = {API_TOKEN: self._api_token, API_KEY: self._api_key}
+        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
             api = 'download'
             _url = URL[api].format(unitGuid, fileName)
@@ -165,12 +165,12 @@ class wsv():
 
     def command(self, unitGuid, command, mode=None):
         "send command"
-        if self._api_key is None or self._api_token is None:
+        if self.__api_key is None or self.__api_token is None:
             _LOGGER.error(f'API Token and Comap-Key not available!')
             return False
         headers = {
-            API_TOKEN: self._api_token,
-            API_KEY: self._api_key,
+            API_TOKEN: self.__api_token,
+            API_KEY: self.__api_key,
             'Content-Type': 'application/json'}
         body = {'command': command}
         if mode is not None:
