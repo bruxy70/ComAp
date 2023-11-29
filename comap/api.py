@@ -153,7 +153,6 @@ class WSV(ComApCloud):
         self,
         api: str,
         unit_guid: str | None = None,
-        file_name: str | None = None,
         payload: dict = None,
     ) -> dict | None:
         """Call WSV API. Return response JSON, None if not succesfull"""
@@ -162,7 +161,6 @@ class WSV(ComApCloud):
             api=api,
             login_id=self.__login_id,
             unit_guid=unit_guid,
-            file_name=file_name,
             payload=payload,
         )
         return None if response is None else response
