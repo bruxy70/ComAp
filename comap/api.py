@@ -7,11 +7,7 @@ import os
 import requests
 import timestring
 
-from .constants import IDENTITY_URL, WSV_URL
-
-COMAP_KEY = "Comap-Key"
-AUTHORIZATION = "Authorization"
-TIMEOUT = 30
+from .constants import AUTHORIZATION, COMAP_KEY, IDENTITY_URL, TIMEOUT, WSV_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,10 +35,9 @@ class ComApCloud:
         api: str,
         login_id: str | None = None,
         unit_guid: str | None = None,
-        file_name: str | None = None,
         payload: dict | None = None,
-    ) -> str | dict:
-        """Call ComAp API. Return None if not succesfull"""
+    ) -> dict | None:
+        """Call ComAp get API. Return response JSON, None if not succesfull"""
         if api not in application:
             _LOGGER.error("Unknown API %s!", api)
             return None
@@ -51,28 +46,27 @@ class ComApCloud:
                 _url = application[api]
             elif unit_guid is None:
                 _url = application[api].format(login_id)
-            elif file_name is None:
-                _url = application[api].format(login_id, unit_guid)
             else:
-                _url = application[api].format(login_id, unit_guid, file_name)
+                _url = application[api].format(login_id, unit_guid)
             body = {} if payload is None else payload
             try:
                 response = requests.get(
                     _url, headers=self._headers, params=body, timeout=TIMEOUT
                 )
             except requests.exceptions.Timeout:
-                _LOGGER.error(f"API get {api} response time-out.")
+                _LOGGER.error("API get %s response time-out.", api)
                 return None
             _LOGGER.debug("Calling API url %s", response.url)
             if response.status_code != 200:
                 _LOGGER.error(
-                    f"API {api} returned code: "
-                    f"{response.status_code} "
-                    f"({response.reason}) "
+                    "API %s returned code: " "%s (%s) ",
+                    api,
+                    response.status_code,
+                    response.reason,
                 )
                 return None
         except Exception as e:
-            _LOGGER.error(f"API {api} error {e}")
+            _LOGGER.error("API %s error %s", api, e)
             return None
         return response.json()
 
@@ -83,8 +77,8 @@ class ComApCloud:
         login_id: str | None = None,
         unit_guid: str | None = None,
         payload: dict | None = None,
-    ) -> str | dict:
-        """Call ComAp API. Return None if not succesfull"""
+    ) -> dict | None:
+        """Call ComAp post API. Return response JSON, None if not succesfull"""
         if api not in application:
             _LOGGER.error("Unknown API %s!", api)
             return None
@@ -101,18 +95,19 @@ class ComApCloud:
                     _url, headers=self._headers, json=body, timeout=TIMEOUT
                 )
             except requests.exceptions.Timeout:
-                _LOGGER.error(f"API post {api} response time-out.")
+                _LOGGER.error("API post %s response time-out.", api)
                 return None
             _LOGGER.debug("Calling API url %s", response.url)
             if response.status_code != 200:
                 _LOGGER.error(
-                    f"API {api} returned code: "
-                    f"{response.status_code} "
-                    f"({response.reason})"
+                    "API %s returned code: " "%s (%s) ",
+                    api,
+                    response.status_code,
+                    response.reason,
                 )
                 return None
         except Exception as e:
-            _LOGGER.error(f"API {api} error {e}")
+            _LOGGER.error("API %s error %s", api, e)
             return None
         return response.json()
 
@@ -125,13 +120,17 @@ class Identity(ComApCloud):
         super().__init__({"Content-Type": "application/json", COMAP_KEY: key})
 
     def get_api(self, api: str, payload: dict = None) -> str | dict:
-        return self._get_api(application=IDENTITY_URL, api=api, payload=payload)
+        """Call ComAp Identity get API. Return response JSON if succesfull, None if not succesfull"""
+        response = self._get_api(application=IDENTITY_URL, api=api, payload=payload)
+        return None if response is None else response
 
     def post_api(self, api: str, payload: dict = None) -> str | dict:
-        return self._post_api(application=IDENTITY_URL, api=api, payload=payload)
+        """Call ComAp Identity post API. Return response JSON if succesfull, None if not succesfull"""
+        response = self._post_api(application=IDENTITY_URL, api=api, payload=payload)
+        return None if response is None else response
 
     def authenticate(self, client_id: str, secret: str) -> dict | None:
-        """Get bearer token"""
+        """Authenticate and return bearer token dictinary. The token is in ['access_token']"""
         body = {"clientId": client_id, "secret": secret}
         return self.post_api(api="authenticate", payload=body)
 
@@ -157,8 +156,8 @@ class WSV(ComApCloud):
         file_name: str | None = None,
         payload: dict = None,
     ) -> dict | None:
-        """Call ComAp API. Return None if not succesfull"""
-        return self._get_api(
+        """Call WSV API. Return response JSON, None if not succesfull"""
+        response = self._get_api(
             application=WSV_URL,
             api=api,
             login_id=self.__login_id,
@@ -166,18 +165,21 @@ class WSV(ComApCloud):
             file_name=file_name,
             payload=payload,
         )
+        return None if response is None else response
 
     def post_api(
         self, api: str, unit_guid: str | None = None, payload: dict = None
     ) -> dict | None:
-        """Call ComAp API. Return None if not succesfull"""
-        return self._post_api(
+        """Call ComAp API. Return response JSON, None if not succesfull"""
+
+        response = self._post_api(
             application=WSV_URL,
             api=api,
             login_id=self.__login_id,
             unit_guid=unit_guid,
             payload=payload,
         )
+        return None if response is None else response
 
     def units(self) -> list:
         """Get list of all units - returns a list of xxx with two values: name, unitGuid"""
@@ -234,34 +236,40 @@ class WSV(ComApCloud):
             file["generated"] = timestring.Date(file["generated"]).date
         return files
 
-    def download(self, unit_guid, file_name, path=''):
-        "download file"
+    def download(self, unit_guid, file_name, path=""):
+        """Download a file with 'file_name', store it in the 'path'"""
         try:
-            api = 'download'
-            _url = WSV_URL[api].format(self.__login_id, unit_guid, file_name)
-            _LOGGER.debug('url %s',_url)
+            _url = WSV_URL["download"].format(self.__login_id, unit_guid, file_name)
+            body = {}
             try:
-                response = requests.get(_url, headers=self._headers, timeout=TIMEOUT)
+                response = requests.get(
+                    _url, headers=self._headers, params=body, timeout=TIMEOUT
+                )
             except requests.exceptions.Timeout:
-                _LOGGER.error("API get %s response time-out.", api)
-                return False 
+                _LOGGER.error("API get 'download' response time-out.")
+                return False
+            _LOGGER.debug("Calling API url %s", response.url)
             if response.status_code != 200:
                 _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status_code} '
-                    f'({response.reason})')
+                    "API 'download' returned code: " "%s (%s) ",
+                    response.status_code,
+                    response.reason,
+                )
                 return False
-            _LOGGER.debug('Calling API url %s',response.url)
-            with open(os.path.join(path, file_name), 'wb') as f:
+        except Exception as e:
+            _LOGGER.error("API 'download' error %s", e)
+            return False
+        try:
+            with open(os.path.join(path, file_name), "wb") as f:
                 f.write(response.content)
             f.close()
         except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
+            _LOGGER.error(f"API 'download' error {e}")
             return False
         return True
 
     def command(self, unit_guid: str, command: str, mode=None):
-        "send command"
+        "Send a command"
 
         body = {"command": command}
         if mode is not None:

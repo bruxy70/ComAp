@@ -1,6 +1,11 @@
 """
 Text constants for ComAp API
 """
+
+COMAP_KEY = "Comap-Key"
+AUTHORIZATION = "Authorization"
+TIMEOUT = 30
+
 IDENTITY_URL = {
     'client_id': 'https://api.websupervisor.net/identity/application',
     'application_secret': 'https://api.websupervisor.net/identity/application/createSecret',
