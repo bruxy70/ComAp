@@ -2,21 +2,23 @@
 comap.api module
 """
 import logging
-import json
 import os
-from datetime import datetime, date, time, timedelta
+
 import requests
 import timestring
-from .constants import URL
 
-API_KEY = 'Comap-Key'
-API_TOKEN = 'Token'
+from .constants import IDENTITY_URL, WSV_URL
+
+COMAP_KEY = "Comap-Key"
+AUTHORIZATION = "Authorization"
+TIMEOUT = 30
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ErrorGettingData(Exception):
     """Raised when we cannot get data from API"""
+
     def __init__(self, value):
         self.value = value
 
@@ -24,138 +26,233 @@ class ErrorGettingData(Exception):
         return repr(self.value)
 
 
-class wsv():
-    """Constructor"""
-    def __init__(self, key, token=''):
-        """Setup of the czpubtran library"""
-        self.__api_key = key
-        self.__api_token = token
+class ComApCloud:
+    """Create ComAp Cloud API instance"""
 
-    def __call_api(self, api, unitGuid=None, payload={}):
+    def __init__(self, headers: dict) -> None:
+        """Create ComAp Cloud API instance"""
+        self._headers = headers
+
+    def _get_api(
+        self,
+        application: dict,
+        api: str,
+        login_id: str | None = None,
+        unit_guid: str | None = None,
+        file_name: str | None = None,
+        payload: dict | None = None,
+    ) -> str | dict:
         """Call ComAp API. Return None if not succesfull"""
-        if self.__api_key is None or self.__api_token is None:
-            _LOGGER.error(f'API Token and Comap-Key not available!')
+        if api not in application:
+            _LOGGER.error("Unknown API %s!", api)
             return None
-        if api not in URL:
-            _LOGGER.error(f'Unknown API {api}!')
-            return None
-        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
-            _url = URL[api] if unitGuid is None else URL[api].format(unitGuid)
-            response = requests.get(_url, headers=headers, params=payload)
-            _LOGGER.debug(f'Calling API url {response.url}')
+            if login_id is None:
+                _url = application[api]
+            elif unit_guid is None:
+                _url = application[api].format(login_id)
+            elif file_name is None:
+                _url = application[api].format(login_id, unit_guid)
+            else:
+                _url = application[api].format(login_id, unit_guid, file_name)
+            body = {} if payload is None else payload
+            try:
+                response = requests.get(
+                    _url, headers=self._headers, params=body, timeout=TIMEOUT
+                )
+            except requests.exceptions.Timeout:
+                _LOGGER.error(f"API get {api} response time-out.")
+                return None
+            _LOGGER.debug("Calling API url %s", response.url)
             if response.status_code != 200:
                 _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status_code} '
-                    f'({response.reason}) '
+                    f"API {api} returned code: "
+                    f"{response.status_code} "
+                    f"({response.reason}) "
                 )
                 return None
         except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
+            _LOGGER.error(f"API {api} error {e}")
             return None
         return response.json()
 
-    def units(self):
-        """Get list of all units - returns a list of xxx with two values: name, unitGuid"""
-        response_json = self.__call_api('units')
-        return [] if response_json is None else response_json['units']
+    def _post_api(
+        self,
+        application: dict,
+        api: str,
+        login_id: str | None = None,
+        unit_guid: str | None = None,
+        payload: dict | None = None,
+    ) -> str | dict:
+        """Call ComAp API. Return None if not succesfull"""
+        if api not in application:
+            _LOGGER.error("Unknown API %s!", api)
+            return None
+        try:
+            if login_id is None:
+                _url = application[api]
+            elif unit_guid is None:
+                _url = application[api].format(login_id)
+            else:
+                _url = application[api].format(login_id, unit_guid)
+            body = {} if payload is None else payload
+            try:
+                response = requests.post(
+                    _url, headers=self._headers, json=body, timeout=TIMEOUT
+                )
+            except requests.exceptions.Timeout:
+                _LOGGER.error(f"API post {api} response time-out.")
+                return None
+            _LOGGER.debug("Calling API url %s", response.url)
+            if response.status_code != 200:
+                _LOGGER.error(
+                    f"API {api} returned code: "
+                    f"{response.status_code} "
+                    f"({response.reason})"
+                )
+                return None
+        except Exception as e:
+            _LOGGER.error(f"API {api} error {e}")
+            return None
+        return response.json()
 
-    def values(self, unitGuid, valueGuids=None):
+
+class Identity(ComApCloud):
+    """Create ComAp Cloud Identity API instance"""
+
+    def __init__(self, key: str) -> None:
+        """Setup of the ComAp Cloud Identity API class"""
+        super().__init__({"Content-Type": "application/json", COMAP_KEY: key})
+
+    def get_api(self, api: str, payload: dict = None) -> str | dict:
+        return self._get_api(application=IDENTITY_URL, api=api, payload=payload)
+
+    def post_api(self, api: str, payload: dict = None) -> str | dict:
+        return self._post_api(application=IDENTITY_URL, api=api, payload=payload)
+
+    def authenticate(self, client_id: str, secret: str) -> dict | None:
+        """Get bearer token"""
+        body = {"clientId": client_id, "secret": secret}
+        return self.post_api(api="authenticate", payload=body)
+
+
+class WSV(ComApCloud):
+    """Constructor"""
+
+    def __init__(self, login_id: str, key: str, token: str) -> None:
+        """Create WSV API instance"""
+        self.__login_id = login_id
+        super().__init__(
+            {
+                "Content-Type": "application/json",
+                COMAP_KEY: key,
+                AUTHORIZATION: "Bearer " + token,
+            }
+        )
+
+    def get_api(
+        self,
+        api: str,
+        unit_guid: str | None = None,
+        file_name: str | None = None,
+        payload: dict = None,
+    ) -> dict | None:
+        """Call ComAp API. Return None if not succesfull"""
+        return self._get_api(
+            application=WSV_URL,
+            api=api,
+            login_id=self.__login_id,
+            unit_guid=unit_guid,
+            file_name=file_name,
+            payload=payload,
+        )
+
+    def post_api(
+        self, api: str, unit_guid: str | None = None, payload: dict = None
+    ) -> dict | None:
+        """Call ComAp API. Return None if not succesfull"""
+        return self._post_api(
+            application=WSV_URL,
+            api=api,
+            login_id=self.__login_id,
+            unit_guid=unit_guid,
+            payload=payload,
+        )
+
+    def units(self) -> list:
+        """Get list of all units - returns a list of xxx with two values: name, unitGuid"""
+        response_json = self.get_api("units")
+        return [] if response_json is None else response_json["units"]
+
+    def values(self, unit_guid: str, value_guids=None):
         """Get Genset values"""
-        if valueGuids is None:
-            response_json = self.__call_api('values', unitGuid)
+        if value_guids is None:
+            response_json = self.get_api("values", unit_guid=unit_guid)
         else:
-            response_json = self.__call_api(
-                'values',
-                unitGuid,
-                {'valueGuids': valueGuids}
+            response_json = self.get_api(
+                "values", unit_guid, {"valueGuids": value_guids}
             )
-        values = [] if response_json is None else response_json['values']
+        values = [] if response_json is None else response_json["values"]
         for value in values:
             value["timeStamp"] = timestring.Date(value["timeStamp"]).date
         return values
 
-    def info(self, unitGuid):
+    def info(self, unit_guid):
         """Get Genset info"""
-        response_json = self.__call_api('info', unitGuid)
+        response_json = self.get_api("info", unit_guid=unit_guid)
         return [] if response_json is None else response_json
 
-    def comments(self, unitGuid):
+    def comments(self, unit_guid):
         """Get Genset comments"""
-        response_json = self.__call_api('comments', unitGuid)
-        comments = [] if response_json is None else response_json['comments']
+        response_json = self.get_api("comments", unit_guid=unit_guid)
+        comments = [] if response_json is None else response_json["comments"]
         for comment in comments:
             comment["date"] = timestring.Date(comment["date"]).date
         return comments
 
-    def history(self, unitGuid, _from=None, _to=None, valueGuids=None):
+    def history(self, unit_guid, _from=None, _to=None, value_guids=None):
         """Get Genset history"""
         payload = {}
         if _from is not None:
-            payload['from'] = _from
+            payload["from"] = _from
         if _to is not None:
-            payload['to'] = _to
-        if valueGuids is not None:
-            payload['valueGuids'] = valueGuids
-        response_json = self.__call_api('history', unitGuid, payload=payload)
-        values = [] if response_json is None else response_json['values']
+            payload["to"] = _to
+        if value_guids is not None:
+            payload["valueGuids"] = value_guids
+        response_json = self.get_api("history", unit_guid=unit_guid, payload=payload)
+        values = [] if response_json is None else response_json["values"]
         for value in values:
             for entry in value["history"]:
                 entry["validTo"] = timestring.Date(entry["validTo"]).date
         return values
 
-    def files(self, unitGuid):
+    def files(self, unit_guid):
         """Get Genset files"""
-        response_json = self.__call_api('files', unitGuid)
-        files = [] if response_json is None else response_json['files']
+        response_json = self.get_api("files", unit_guid=unit_guid)
+        files = [] if response_json is None else response_json["files"]
         for file in files:
             file["generated"] = timestring.Date(file["generated"]).date
         return files
 
-    def authenticate(self, username, password):
-        if self.__api_key is None:
-            _LOGGER.error(f'API Comap-Key not available!')
-            return None
-        api = "authenticate"
-        headers = {API_KEY: self.__api_key, 'Content-Type': 'application/json'}
-        body = {'username': username, 'password': password}
-        try:
-            _url = URL[api]
-            response = requests.post(_url, headers=headers, json=body)
-            _LOGGER.debug(f'Calling API url {response.url}')
-            if response.status_code != 200:
-                _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status_code} '
-                    f'({response.reason})')
-                return None
-        except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
-            return None
-        response_json = response.json()
-        self.__api_token = '' if response_json is None else response_json['applicationToken']
-        return self.__api_token
-
-    def download(self, unitGuid, fileName, path=''):
+    def download(self, unit_guid, file_name, path=''):
         "download file"
-        if self.__api_key is None or self.__api_token is None:
-            _LOGGER.error(f'API Token and Comap-Key not available!')
-            return False
-        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
             api = 'download'
-            _url = URL[api].format(unitGuid, fileName)
-            _LOGGER.debug(f'url {_url}')
-            response = requests.get(_url, headers=headers)
+            _url = WSV_URL[api].format(self.__login_id, unit_guid, file_name)
+            _LOGGER.debug('url %s',_url)
+            try:
+                response = requests.get(_url, headers=self._headers, timeout=TIMEOUT)
+            except requests.exceptions.Timeout:
+                _LOGGER.error("API get %s response time-out.", api)
+                return False 
             if response.status_code != 200:
                 _LOGGER.error(
                     f'API {api} returned code: '
                     f'{response.status_code} '
                     f'({response.reason})')
                 return False
-            _LOGGER.debug(f'Calling API url {response.url}')
-            with open(os.path.join(path, fileName), 'wb') as f:
+            _LOGGER.debug('Calling API url %s',response.url)
+            with open(os.path.join(path, file_name), 'wb') as f:
                 f.write(response.content)
             f.close()
         except Exception as e:
@@ -163,40 +260,29 @@ class wsv():
             return False
         return True
 
-    def command(self, unitGuid, command, mode=None):
+    def command(self, unit_guid: str, command: str, mode=None):
         "send command"
-        if self.__api_key is None or self.__api_token is None:
-            _LOGGER.error(f'API Token and Comap-Key not available!')
-            return False
-        headers = {
-            API_TOKEN: self.__api_token,
-            API_KEY: self.__api_key,
-            'Content-Type': 'application/json'}
-        body = {'command': command}
+
+        body = {"command": command}
         if mode is not None:
-            body['mode'] = mode
-        try:
-            api = 'command'
-            _url = URL[api].format(unitGuid)
-            response = requests.post(_url, headers=headers, json=body)
-            if response.status_code != 200:
-                _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status_code} '
-                    f'({response.reason})')
-                return False
-            _LOGGER.debug(f'Calling API url {response.url}')
-        except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
-            return False
-        return True
+            body["mode"] = mode
+        return self.post_api("command", unit_guid=unit_guid, payload=body)
 
     def get_unit_guid(self, name):
         """Find GUID for unit name"""
-        unit = next((unit for unit in self.units() if unit['name'].find(name) >= 0), None)
-        return None if unit is None else unit['unitGuid']
+        unit = next(
+            (unit for unit in self.units() if unit["name"].find(name) >= 0), None
+        )
+        return None if unit is None else unit["unitGuid"]
 
-    def get_value_guid(self, unitGuid, name):
+    def get_value_guid(self, unit_guid, name):
         """Find guid of a value"""
-        value = next((value for value in self.values(unitGuid) if value['name'].find(name) >= 0), None)
-        return None if value is None else value['valueGuid']
+        value = next(
+            (
+                value
+                for value in self.values(unit_guid)
+                if value["name"].find(name) >= 0
+            ),
+            None,
+        )
+        return None if value is None else value["valueGuid"]

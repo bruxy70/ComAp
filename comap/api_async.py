@@ -1,15 +1,15 @@
 """
 comap.api_async module
 """
-import logging
-import json
-import os
-import aiofiles
-from datetime import datetime, date, time, timedelta
 import asyncio
+import logging
+import os
+
+import aiofiles
 import aiohttp
 import async_timeout
 import timestring
+
 from .constants import URL
 
 HTTP_TIMEOUT = 10

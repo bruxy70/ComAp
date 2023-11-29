@@ -1,17 +1,22 @@
 """
 Text constants for ComAp API
 """
+IDENTITY_URL = {
+    'client_id': 'https://api.websupervisor.net/identity/application',
+    'application_secret': 'https://api.websupervisor.net/identity/application/createSecret',
+    'get_application': 'https://api.websupervisor.net/identity/application',
+    'authenticate': 'https://api.websupervisor.net/identity/application/authenticate'    
+}
 
-URL = {
-    'authenticate': 'https://api.websupervisor.net/v1/authenticate',
-    'units':   'https://api.websupervisor.net/v1/units',
-    'values':  'https://api.websupervisor.net/v1/units/{}/values',
-    'info':    'https://api.websupervisor.net/v1/units/{}/info',
-    'history': 'https://api.websupervisor.net/v1/units/{}/history',
-    'files':   'https://api.websupervisor.net/v1/units/{}/files',
-    'command': 'https://api.websupervisor.net/v1/units/{}/command',
-    'comments':'https://api.websupervisor.net/v1/units/{}/comments',
-    'download':'https://api.websupervisor.net/v1/units/{}/download/{}'
+WSV_URL = {
+    'units':   'https://api.websupervisor.net/v1.1/{}/units',
+    'values':  'https://api.websupervisor.net/v1.1/{}/units/{}/values',
+    'info':    'https://api.websupervisor.net/v1.1/{}/units/{}/info',
+    'history': 'https://api.websupervisor.net/v1.1/{}/units/{}/history',
+    'files':   'https://api.websupervisor.net/v1.1/{}/units/{}/files',
+    'command': 'https://api.websupervisor.net/v1.1/{}/units/{}/command',
+    'comments':'https://api.websupervisor.net/v1.1/{}/units/{}/comments',
+    'download':'https://api.websupervisor.net/v1.1/{}/unit/{}/download/{}'
 }
 
 VALUE_GUID = {
