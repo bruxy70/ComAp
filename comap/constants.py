@@ -7,21 +7,18 @@ AUTHORIZATION = "Authorization"
 TIMEOUT = 30
 
 IDENTITY_URL = {
-    'client_id': 'https://api.websupervisor.net/identity/application',
-    'application_secret': 'https://api.websupervisor.net/identity/application/createSecret',
-    'get_application': 'https://api.websupervisor.net/identity/application',
     'authenticate': 'https://api.websupervisor.net/identity/application/authenticate'    
 }
 
 WSV_URL = {
-    'units':   'https://api.websupervisor.net/v1.1/{}/units',
-    'values':  'https://api.websupervisor.net/v1.1/{}/units/{}/values',
-    'info':    'https://api.websupervisor.net/v1.1/{}/units/{}/info',
-    'history': 'https://api.websupervisor.net/v1.1/{}/units/{}/history',
-    'files':   'https://api.websupervisor.net/v1.1/{}/units/{}/files',
-    'command': 'https://api.websupervisor.net/v1.1/{}/units/{}/command',
-    'comments':'https://api.websupervisor.net/v1.1/{}/units/{}/comments',
-    'download':'https://api.websupervisor.net/v1.1/{}/unit/{}/download/{}'
+    'units':   'https://api.websupervisor.net/v1.1/{login_id}/units',
+    'values':  'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/values',
+    'info':    'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/info',
+    'history': 'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/history',
+    'files':   'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/files',
+    'command': 'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/command',
+    'comments':'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/comments',
+    'download':'https://api.websupervisor.net/v1.1/{login_id}/unit/{unit_guid}/download/{file_name}'
 }
 
 VALUE_GUID = {
