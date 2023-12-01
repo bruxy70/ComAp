@@ -2,16 +2,23 @@
 Text constants for ComAp API
 """
 
-URL = {
-    'authenticate': 'https://api.websupervisor.net/v1/authenticate',
-    'units':   'https://api.websupervisor.net/v1/units',
-    'values':  'https://api.websupervisor.net/v1/units/{}/values',
-    'info':    'https://api.websupervisor.net/v1/units/{}/info',
-    'history': 'https://api.websupervisor.net/v1/units/{}/history',
-    'files':   'https://api.websupervisor.net/v1/units/{}/files',
-    'command': 'https://api.websupervisor.net/v1/units/{}/command',
-    'comments':'https://api.websupervisor.net/v1/units/{}/comments',
-    'download':'https://api.websupervisor.net/v1/units/{}/download/{}'
+COMAP_KEY = "Comap-Key"
+AUTHORIZATION = "Authorization"
+TIMEOUT = 30
+
+IDENTITY_URL = {
+    'authenticate': 'https://api.websupervisor.net/identity/application/authenticate'    
+}
+
+WSV_URL = {
+    'units':   'https://api.websupervisor.net/v1.1/{login_id}/units',
+    'values':  'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/values',
+    'info':    'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/info',
+    'history': 'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/history',
+    'files':   'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/files',
+    'command': 'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/command',
+    'comments':'https://api.websupervisor.net/v1.1/{login_id}/units/{unit_guid}/comments',
+    'download':'https://api.websupervisor.net/v1.1/{login_id}/unit/{unit_guid}/download/{file_name}'
 }
 
 VALUE_GUID = {

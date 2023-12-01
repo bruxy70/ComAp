@@ -1,26 +1,34 @@
+"""comap.api_async module
+
+A wrapper around ComAp API, that allows easy automation of WebSupervisor tasks, such as downloading and analyzing data.
+The instructions for testing and examples are available on ComAp-API repository.
+
+There are two modules available - a simpler synchronous module `comap.api` and asynchronous module `comap.api_async`. The async module is recommended for use in production.
+
+This module contains two classes:
+
+- IdentityAsync - serves to authenticate to ComAp Cloud and obtain the token
+                  used in the individual APIs.
+- WSVAsync      - set of APIs to communicate with the WebSupervisor PRO
+
 """
-comap.api_async module
-"""
-import logging
-import json
-import os
-import aiofiles
-from datetime import datetime, date, time, timedelta
 import asyncio
+import logging
+import os
+from datetime import datetime
+
+import aiofiles
 import aiohttp
 import async_timeout
-import timestring
-from .constants import URL
 
-HTTP_TIMEOUT = 10
-API_KEY = 'Comap-Key'
-API_TOKEN = 'Token'
+from .constants import AUTHORIZATION, COMAP_KEY, IDENTITY_URL, TIMEOUT, WSV_URL
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ErrorGettingData(Exception):
     """Raised when we cannot get data from API"""
+
     def __init__(self, value):
         self.value = value
 
@@ -28,201 +36,504 @@ class ErrorGettingData(Exception):
         return repr(self.value)
 
 
-class wsv_async():
-    """Constructor"""
-    def __init__(self, session, key, token=''):
-        """Setup of the czpubtran library"""
-        self.__api_key = key
-        self.__api_token = token
-        self.__session = session
+class ComApCloudAsync:
+    """The base class for both APIs"""
 
-    async def __async_call_api(self, api, unitGuid=None, payload={}):
-        """Call ComAp API. Return None if not succesfull"""
-        if self.__api_key is None or self.__api_token is None:
-            _LOGGER.error(f'API Token and Comap-Key not available!')
+    def __init__(
+        self, session: aiohttp.ClientSession, headers: dict, login_id: str = None
+    ) -> None:
+        """Create ComAp Cloud API instance
+
+        Parameters:
+        -----------
+        session: `aiohttp.ClientSession`
+            HTTPS connection pool instance
+        headers: `dict`
+            Contain ComAp Key, and for WSV API Authorization (Bearer token)
+        login_id: `str`, optional
+            the user name (each identity can have multiple user names)
+        """
+        self._headers = headers
+        self._session = session
+        self._login_id = login_id
+
+    async def async_get_api(
+        self,
+        application: dict,
+        api: str,
+        unit_guid: str | None = None,
+        file_name: str | None = None,
+        payload: dict | None = None,
+    ) -> aiohttp.ClientResponse | None:
+        """Call ComAp GET API.
+
+        Parameters:
+        -----------
+        application: `dict`
+            points to dictionary of URLs for different APIs
+        api: `str`
+            one of the keys in the application dictionary
+        unit_guid: `str`, optional
+            for WSV API - the genset ID (from the `units` API, or in WSV application front-end)
+        file_name: `str`, optional
+            for WSV download API - file name
+        payload: `dict`, optional
+            some APIs require a payload
+
+        Returns:
+        --------
+        `aiohttp.ClientResponse` or `None` if not succesfull
+        """
+        if api not in application:
+            _LOGGER.error("Unknown API '%s'!", api)
             return None
-        if api not in URL:
-            _LOGGER.error(f'Unknown API {api}!')
-            return None
-        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
+        _url = application[api].format(
+            login_id=self._login_id, unit_guid=unit_guid, file_name=file_name
+        )
+        _body = {} if payload is None else payload
         try:
-            _url = URL[api] if unitGuid is None else URL[api].format(unitGuid)
-            with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self.__session.get(_url, headers=headers, params=payload)
+            with async_timeout.timeout(TIMEOUT):
+                response = await self._session.get(
+                    _url, headers=self._headers, params=_body
+                )
             if response.status != 200:
                 response_text = await response.text()
                 _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status} '
-                    f'({response_text})')
+                    "API GET '%s' returned code: %s (%s)",
+                    api,
+                    response.status,
+                    response_text,
+                )
                 return None
-        except (asyncio.TimeoutError):
-            _LOGGER.error(f'API {api} response timeout')
+        except asyncio.TimeoutError:
+            _LOGGER.error("API GET '%s' response timeout", api)
             return None
         except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
+            _LOGGER.error(f"API GET '%s' error %s", api, e)
             return None
-        return await response.json()
+        return await response
 
-    async def async_units(self):
-        """Get list of all units - returns a list of xxx with two values: name, unitGuid"""
-        response_json = await self.__async_call_api('units')
-        return [] if response_json is None else response_json['units']
+    async def async_post_api(
+        self,
+        application: dict,
+        api: str,
+        unit_guid: str | None = None,
+        payload: dict | None = None,
+    ) -> aiohttp.ClientResponse | None:
+        """Call ComAp POST API.
 
-    async def async_values(self, unitGuid, valueGuids=None):
-        """Get Genset values"""
-        if valueGuids is None:
-            response_json = await self.__async_call_api('values', unitGuid)
+        Parameters:
+        -----------
+        application: `dict`
+            points to dictionary of URLs for different APIs
+        api: `str`
+            one of the keys in the application dictionary
+        unit_guid: `str`, optional
+            for WSV API - the genset ID (from the `units` API, or in WSV application front-end)
+        payload: `dict`, optional
+            some APIs require a payload
+
+        Returns:
+        --------
+        `aiohttp.ClientResponse` or `None` if not succesfull
+        """
+        if api not in application:
+            _LOGGER.error("Unknown API '%s'!", api)
+            return None
+        _url = application[api].format(login_id=self._login_id, unit_guid=unit_guid)
+        _body = {} if payload is None else payload
+        try:
+            with async_timeout.timeout(TIMEOUT):
+                response = await self._session.post(
+                    _url, headers=self._headers, params=_body
+                )
+            if response.status != 200:
+                response_text = await response.text()
+                _LOGGER.error(
+                    "API POST '%s' returned code: %s (%s)",
+                    api,
+                    response.status,
+                    response_text,
+                )
+                return None
+        except asyncio.TimeoutError:
+            _LOGGER.error("API POST '%s' response timeout", api)
+            return None
+        except Exception as e:
+            _LOGGER.error("API POST '%s' error %s", api, e)
+            return None
+        return await response
+
+
+class IdentityAsync(ComApCloudAsync):
+    """ComAp Cloud Identity API wrapper"""
+
+    def __init__(self, session: aiohttp.ClientSession, key: str) -> None:
+        """Setup of the ComAp Cloud Identity API class
+
+        Parameters:
+        ----------
+        session: `aiohttp.ClientSession`
+            HTTPS connection pool instance
+        key: `str`
+            ComAp Key (from the API profile)
+        """
+        super().__init__(
+            session=session,
+            headers={"Content-Type": "application/json", COMAP_KEY: key},
+        )
+
+    async def async_authenticate(self, client_id: str, secret: str) -> dict | None:
+        """Authenticate and return bearer token dictionary.
+
+        Parameters:
+        -----------
+        client_id: `str`
+            From ComAp customer portal
+            Or generated on API Documentation test portal using Create application registration API
+        secret: `str`
+            From ComAp customer portal
+            Or generated on API Documentation test portal using Create application secret API
+
+        Returns:
+        --------
+        The bearer access token `dict` or `None` if failed.
+        {
+            'token_type': `str`,
+            'expires_in': `number`,
+            'ext_expires_in': `number`,
+            'access_token': `str` # this is the Bearer access token
+        }
+        """
+        body = {"clientId": client_id, "secret": secret}
+        response = await self.async_post_api(
+            application=IDENTITY_URL, api="authenticate", payload=body
+        )
+        return None if response is None else response.json()
+
+
+class WSVAsync(ComApCloudAsync):
+    """ComAp Cloud WSV API wrapper"""
+
+    def __init__(
+        self, session: aiohttp.ClientSession, login_id: str, key: str, token: str
+    ) -> None:
+        """Setup of the ComAp Cloud WSV API class
+
+        Parameters:
+        -----------
+        session: `aiohttp.ClientSession`
+            HTTPS connection pool instance
+        login_id: `str`
+            the user name (each identity can have multiple user names)
+        key: `str`
+            ComAp Key (from the API profile)
+        token: `str`
+            The Bearer token received from Identity API authenticate
+        """
+        super().__init__(
+            session=session,
+            headers={
+                "Content-Type": "application/json",
+                COMAP_KEY: key,
+                AUTHORIZATION: "Bearer " + token,
+            },
+            login_id=login_id,
+        )
+
+    async def async_units(self) -> list:
+        """Get list of all units
+
+        Returns:
+        --------
+        `list` of `dict`
+        [{
+            'name': `str`,
+            'unitGuid': `str`,
+            'url': `str`
+        }]
+        """
+        response = await self.async_get_api(application=WSV_URL, api="units")
+        return [] if response is None else response.json()["units"]
+
+    async def async_values(
+        self, unit_guid: str, value_guids: str | None = None
+    ) -> list:
+        """Get Genset values
+
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+        value_guids: str, optional
+            list of the value guids separated by comma
+            (get it by calling this function with no parameter or `get_value_guid`)
+
+        Returns:
+        --------
+        `list` of `dict`:
+        [{
+            'name': `str`,
+            'valueGuid': `str`,
+            'value': `str`,
+            'unit': `str`,
+            'highLimit': `number`,
+            'lowLimit': `number`,
+            'decimalPlaces': `number`,
+            'timeStamp': `datetime`
+        }]
+        """
+        if value_guids is None:
+            response = await self.async_get_api(
+                application=WSV_URL, api="values", unit_guid=unit_guid
+            )
         else:
-            response_json = await self.__async_call_api('values', unitGuid, {'valueGuids': valueGuids})
-        values = [] if response_json is None else response_json['values']
+            response = await self.async_get_api(
+                application=WSV_URL,
+                api="values",
+                unit_guid=unit_guid,
+                payload={"valueGuids": value_guids},
+            )
+        values = [] if response is None else response.json()["values"]
         for value in values:
-            value["timeStamp"] = timestring.Date(value["timeStamp"]).date
+            value["timeStamp"] = datetime.fromisoformat(value["timeStamp"])
         return values
 
-    async def comments(self, unitGuid):
-        """Get Genset comments"""
-        response_json = await self.__async_call_api('comments', unitGuid)
-        comments = [] if response_json is None else response_json['comments']
+    async def async_info(self, unit_guid: str) -> dict:
+        """Get Genset info
+
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+
+        Returns:
+        --------
+        Genset info:
+        {'name': `str`,
+        'unitGuid': `str`,
+        'ownerLoginId': `str`,
+        'applicationType': `str`,
+        'timezone': '`str`,
+        'connection': {
+            'enabled': `boolean`,
+            'airGateId': `str`,
+            'ipAddress': `str`,
+            'port': `number`,
+            'controllerAddress': `number`
+        },
+        'position': {
+            'positionType': `str`,
+            'latitude': `number`,
+            'longitude': `number`}
+        }
+        """
+        response = await self.async_get_api(
+            application=WSV_URL, api="info", unit_guid=unit_guid
+        )
+        return [] if response is None else response.json()
+
+    async def async_comments(self, unit_guid: str) -> list:
+        """Get Genset comments
+
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+
+        Returns:
+        --------
+        `list` of `dict`
+        [{
+            "id": `number`,
+            "auhtor": `str`,
+            "date": `datetime`,
+            "text": `str`,
+            "active": `Boolean`
+        }]
+        """
+        response = await self.async_get_api(
+            application=WSV_URL, api="comments", unit_guid=unit_guid
+        )
+        comments = [] if response is None else response.json()["comments"]
         for comment in comments:
-            comment["date"] = timestring.Date(comment["date"]).date
+            comment["date"] = datetime.fromisoformat(comment["date"])
         return comments
 
-    async def async_info(self, unitGuid):
-        """Get Genset info"""
-        response_json = await self.__async_call_api('info', unitGuid)
-        return [] if response_json is None else response_json
+    async def async_history(
+        self,
+        unit_guid: str,
+        _from: str | None = None,
+        _to: str | None = None,
+        value_guids: str | None = None,
+    ) -> list:
+        """Get Genset history
 
-    async def async_comments(self, unitGuid):
-        """Get Genset comments"""
-        response_json = await self.__async_call_api('comments', unitGuid)
-        comments = [] if response_json is None else response_json['comments']
-        for comment in comments:
-            comment["date"] = timestring.Date(comment["date"]).date
-        return comments
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+        _from: `str` in format 'MM/DD/YYYY', optional
+            history start date
+        _to: `str` in format 'MM/DD/YYYY', optional
+            history end date
+        value_guids: `list`, optional
+            list of the value guids separated by comma
+            (get it by calling `values` or `get_value_guid`)
 
-    async def async_history(self, unitGuid, _from=None, _to=None, valueGuids=None):
-        """Get Genset history"""
+        Returns:
+        --------
+        `list` of `dict`
+        [{
+            'value': `str`,
+            'validFrom': `datetime`,
+            'validTo': `datetime`
+        }]
+        """
         payload = {}
         if _from is not None:
-            payload['from'] = _from
+            payload["from"] = _from
         if _to is not None:
-            payload['to'] = _to
-        if valueGuids is not None:
-            payload['valueGuids'] = valueGuids
-        response_json = await self.__async_call_api('history', unitGuid, payload)
-        values = [] if response_json is None else response_json['values']
+            payload["to"] = _to
+        if value_guids is not None:
+            payload["valueGuids"] = value_guids
+        response = await self.async_get_api(
+            application=WSV_URL, api="history", unit_guid=unit_guid, payload=payload
+        )
+        values = [] if response is None else response.json()["values"]
         for value in values:
             for entry in value["history"]:
-                entry["validTo"] = timestring.Date(entry["validTo"]).date
+                entry["validFrom"] = datetime.fromisoformat(entry["validFrom"])
+                entry["validTo"] = datetime.fromisoformat(entry["validTo"])
         return values
 
-    async def async_files(self, unitGuid):
-        """Get Genset files"""
-        response_json = await self.__async_call_api('files', unitGuid)
-        files = [] if response_json is None else response_json['files']
+    async def async_files(self, unit_guid: str) -> list:
+        """Get Genset files
+
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+
+        Returns:
+        --------
+        `list` of `dict`:
+        [{
+            'fileName': `str`,
+            'fileType': `str`,
+            'generated': `datetime`
+        }]
+        """
+        response = await self.async_get_api(
+            application=WSV_URL, api="files", unit_guid=unit_guid
+        )
+        files = [] if response is None else response.json()["files"]
         for file in files:
-            file["generated"] = timestring.Date(file["generated"]).date
+            file["generated"] = datetime.fromisoformat(file["generated"])
         return files
 
-    async def async_authenticate(self, username, password):
-        """Get Authentication Token"""
-        if self.__api_key is None:
-            _LOGGER.error(f'API Comap-Key not available!')
-            return None
-        api = "authenticate"
-        headers = {API_KEY: self.__api_key, 'Content-Type': 'application/json'}
-        body = {'username': username, 'password': password}
-        try:
-            _url = URL[api]
-            with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self.__session.post(_url, headers=headers, json=body)
-            if response.status != 200:
-                response_text = await response.text()
-                _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status} '
-                    f'({response_text})')
-                return None
-        except (asyncio.TimeoutError):
-            _LOGGER.error(f'API {api} response timeout')
-            return None
-        except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
-            return None
-        response_json = await response.json()
-        self.__api_token = '' if response_json is None else response_json['applicationToken']
-        return self.__api_token
+    async def async_download(
+        self, unit_guid: str, file_name: str, path: str = ""
+    ) -> bool:
+        """Download a file with 'file_name', store it in the 'path'
 
-    async def async_download(self, unitGuid, fileName, path=''):
-        "download file"
-        if self.__api_key is None or self.__api_token is None:
-            _LOGGER.error(f'API Token and Comap-Key not available!')
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+        file_name: str
+            List names by calling `files`
+        path: str, optional
+            Local directory to save the file (current directory if not specified)
+
+        Returns:
+        --------
+        `bool`: Was the download succesful?
+        """
+
+        response = await self.async_get_api(
+            application=WSV_URL,
+            api="download",
+            unit_guid=unit_guid,
+            file_name=file_name,
+        )
+        if response is None:
             return False
-        headers = {API_TOKEN: self.__api_token, API_KEY: self.__api_key}
         try:
-            api = 'download'
-            _url = URL[api].format(unitGuid, fileName)
-            with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self.__session.get(_url, headers=headers)
-            if response.status != 200:
-                response_text = await response.text()
-                _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status} '
-                    f'({response_text})')
-                return None
-            f = await aiofiles.open(os.path.join(path, fileName), mode='wb')
+            f = await aiofiles.open(os.path.join(path, file_name), mode="wb")
             await f.write(await response.read())
             await f.close()
-            return True
-        except (asyncio.TimeoutError):
-            _LOGGER.error(f'API {api} response timeout')
-            return False
         except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
-            return False
-
-    async def async_command(self, unitGuid, command, mode=None):
-        "send command"
-        if self.__api_key is None or self.__api_token is None:
-            _LOGGER.error(f'API Token and Comap-Key not available!')
-            return False
-        headers = {
-            API_TOKEN: self.__api_token,
-            API_KEY: self.__api_key,
-            'Content-Type': 'application/json'
-        }
-        body = {'command': command}
-        if mode is not None:
-            body['mode'] = mode
-        try:
-            api = 'command'
-            _url = URL[api].format(unitGuid)
-            with async_timeout.timeout(HTTP_TIMEOUT):
-                response = await self.__session.post(_url, headers=headers, json=body)
-            if response.status != 200:
-                response_text = await response.text()
-                _LOGGER.error(
-                    f'API {api} returned code: '
-                    f'{response.status} '
-                    f'({response_text})')
-                return None
-            _LOGGER.debug(f'Calling API url {response.url}')
-        except (asyncio.TimeoutError):
-            _LOGGER.error(f'API {api} response timeout')
-            return False
-        except Exception as e:
-            _LOGGER.error(f'API {api} error {e}')
+            _LOGGER.error(f"API 'download' error {e}")
             return False
         return True
 
-    async def async_get_unit_guid(self, name):
-        """Find GUID for unit name"""
-        unit = next((unit for unit in await self.async_units() if unit['name'].find(name) >= 0), None)
-        return None if unit is None else unit['unitGuid']
+    async def async_command(
+        self, unit_guid: str, command: str, mode: str | None = None
+    ) -> dict | None:
+        """Send a command
 
-    async def async_get_value_guid(self, unitGuid, name):
-        """Find guid of a value"""
-        value = next((value for value in await self.async_values(unitGuid) if value['name'].find(name) >= 0), None)
-        return None if value is None else value['valueGuid']
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+        command: str
+            see the API documentation
+        mode: str, optional
+            see the API documentation
+
+        Returns:
+        --------
+        `dict`: json return value
+        """
+
+        body = {"command": command}
+        if mode is not None:
+            body["mode"] = mode
+        response = await self.async_get_api(
+            application=WSV_URL, api="command", unit_guid=unit_guid, payload=body
+        )
+        return None if response is None else response.json()
+
+    async def async_get_unit_guid(self, name: str) -> str | None:
+        """Call units API and find GUID for a unit by name
+
+        Parameters:
+        -----------
+        name: str
+            Name of the unit
+
+        Returns:
+        --------
+        unitGuid (`str`) or `None`
+        """
+        unit = next(
+            (unit for unit in await self.async_units() if unit["name"].find(name) >= 0),
+            None,
+        )
+        return None if unit is None else unit["unitGuid"]
+
+    async def async_get_value_guid(self, unit_guid: str, name: str) -> str | None:
+        """Call values API and find GUID for a value by name
+
+        Parameters:
+        -----------
+        unit_guid: str
+            the genset ID (from the `units` API, or in WSV application front-end)
+        name: str
+            Name of the value
+
+        Returns:
+        --------
+        valueGuid (`str`) or `None`
+
+        """
+        value = next(
+            (
+                value
+                for value in await self.async_values(unit_guid)
+                if value["name"].find(name) >= 0
+            ),
+            None,
+        )
+        return None if value is None else value["valueGuid"]
