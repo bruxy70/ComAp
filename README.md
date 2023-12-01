@@ -20,6 +20,8 @@ This module contains two classes:
              used in the individual APIs.
 - [WSV](#class-wsvlogin_id-str-key-str-token-str)      - set of APIs to communicate with the WebSupervisor PRO
 
+---
+
 ## Class: Identity(key: str)
 
 Use `ComAp-Key`, `client_id` and `secret` to obtain the ``Bearer Token``, that is needed to authenticate to the WSV API.
@@ -57,9 +59,7 @@ Until then, you can generate them from the API documentation using the "Try it" 
 
 These values are valid for 2 years. If you need new values, [Delete Application Registration](https://portal.websupervisor.net/docs/services/comap-cloud-identity/operations/application-delete?) and create new ones.
 
-### Methods
-
-#### ==authenticate(self, client_id: str, secret: str) ‑> dict | None==
+### authenticate(self, client_id: str, secret: str) ‑> dict | None
 
 Authenticate and return bearer token dictionary.
 
@@ -87,6 +87,8 @@ The bearer access token `dict` or `None` if failed.
     'access_token': `str` # this is the Bearer access token
 }
 ```
+
+---
 
 ## Class: WSV(login_id: str, key: str, token: str)
 
@@ -122,9 +124,7 @@ genset84f8*********redacted*********** : unit2 name
 genset38ed*********redacted*********** : unit3 name
 ```
 
-### Methods
-
-#### units() -> list
+### units() -> list
 
 Get a `list` of units with their unitGuid
 
@@ -138,7 +138,7 @@ Get a `list` of units with their unitGuid
 }]
 ```
 
-#### values(unit_guid: str, value_guids: str | None = None) ‑> list
+### values(unit_guid: str, value_guids: str | None = None) ‑> list
 
 Get a `list` of values. It is recommended to specify a comma-separated list of `valueGuids` to filter the result.
 You can import VALUE_GUID from `comap.constants` to get GUIDs for the most common values. Or call the method without GUID to get all values available in the controller, including their GUIDs.
@@ -163,7 +163,7 @@ You can import VALUE_GUID from `comap.constants` to get GUIDs for the most commo
 }]
 ```
 
-#### info(unitGuid: str) -> list
+### info(unitGuid: str) -> list
 
 Get information about the unit
 
@@ -195,7 +195,7 @@ Get information about the unit
 }
 ```
 
-#### comments(unitGuid: str) -> list
+### comments(unitGuid: str) -> list
 
 Get comments entered in the WebSupervisor (these can be used for maintenance tasks)
 | Parameter | Type | Value |
@@ -214,7 +214,7 @@ Get comments entered in the WebSupervisor (these can be used for maintenance tas
 }]
 ```
 
-#### history(unit_guid: str, value_guids: str | None = None) ‑> list
+### history(unit_guid: str, value_guids: str | None = None) ‑> list
 
 Get the history of a value.
 
@@ -235,7 +235,7 @@ Get the history of a value.
 }]
 ```
 
-#### files(unitGuid: str) -> list
+### files(unitGuid: str) -> list
 
 Get the `list` of files stored on the controller
 
@@ -253,7 +253,7 @@ Get the `list` of files stored on the controller
 }]
 ```
 
-#### download(unit_guid: str, file_name: str, path: str = '') ‑> bool
+### download(unit_guid: str, file_name: str, path: str = '') ‑> bool
 
 Download a file from the controller to the current directory (or the directory specified in `path`). You can list the files using the `files` method.
 
@@ -267,7 +267,7 @@ Download a file from the controller to the current directory (or the directory s
 
 `bool`: Was the download succesful?
 
-#### command(unit_guid: str, command: str, mode: str | None = None) ‑> dict | None
+### command(unit_guid: str, command: str, mode: str | None = None) ‑> dict | None
 
 This allows controlling the genset. The available commands are `start`,`stop`,`faultReset`,`changeMcb` (toggle mains circuit breaker), `changeGcb` (toggle genset circuit breaker) and `changeMode`.
 For `changeMode` enter the `mode` parameter e.g. to `man` or `auto`
@@ -281,7 +281,7 @@ For `changeMode` enter the `mode` parameter e.g. to `man` or `auto`
 **Returns**
 API response in the `JSON` format
 
-#### get_unit_guid(name: str) ‑> str | None`
+### get_unit_guid(name: str) ‑> str | None`
 
 Find a genset by name. Return is unitGuid
 
@@ -289,7 +289,7 @@ Find a genset by name. Return is unitGuid
 | --- | --- | --- |
 | name | str | genset name
 
-#### get_value_guid(unit_guid: str, name: str) ‑> str | None
+### get_value_guid(unit_guid: str, name: str) ‑> str | None
 
 Find a value by name. Return valueGuid
 
@@ -310,6 +310,8 @@ This module contains two classes:
 - [IdentityAsync](#class-identityasynckey-str) - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
 - [WSVAsync](#class-wsvasynclogin_id-str-key-str-token-str)      - set of APIs to communicate with the WebSupervisor PRO
+
+---
 
 ## Class: IdentityAsync(session: aiohttp.ClientSession, key: str)
 
@@ -355,9 +357,7 @@ Until then, you can generate them from the API documentation using the "Try it" 
 
 These values are valid for 2 years. If you need new values, [Delete Application Registration](https://portal.websupervisor.net/docs/services/comap-cloud-identity/operations/application-delete?) and create new ones.
 
-### Methods
-
-#### async_authenticate(self, client_id: str, secret: str) ‑> dict | None
+### async_authenticate(self, client_id: str, secret: str) ‑> dict | None
 
 Authenticate and return bearer token dictionary.
 
@@ -385,6 +385,8 @@ The bearer access token `dict` or `None` if failed.
     'access_token': `str` # this is the Bearer access token
 }
 ```
+
+---
 
 ## Class: WSVAsync(session: aiohttp.ClientSession, login_id: str, key: str, token: str)
 
@@ -435,9 +437,7 @@ genset84f8*********redacted*********** : unit2 name
 genset38ed*********redacted*********** : unit3 name
 ```
 
-### Methods
-
-#### async_units() -> list
+### async_units() -> list
 
 Get a `list` of units with their unitGuid
 
@@ -451,7 +451,7 @@ Get a `list` of units with their unitGuid
 }]
 ```
 
-#### async_values(unit_guid: str, value_guids: str | None = None) ‑> list
+### async_values(unit_guid: str, value_guids: str | None = None) ‑> list
 
 Get a `list` of values. It is recommended to specify a comma-separated list of `valueGuids` to filter the result.
 You can import VALUE_GUID from `comap.constants` to get GUIDs for the most common values. Or call the method without GUID to get all values available in the controller, including their GUIDs.
@@ -476,7 +476,7 @@ You can import VALUE_GUID from `comap.constants` to get GUIDs for the most commo
 }]
 ```
 
-#### async_info(unitGuid: str) -> list
+### async_info(unitGuid: str) -> list
 
 Get information about the unit
 
@@ -508,7 +508,7 @@ Get information about the unit
 }
 ```
 
-#### async_comments(unitGuid: str) -> list
+### async_comments(unitGuid: str) -> list
 
 Get comments entered in the WebSupervisor (these can be used for maintenance tasks)
 | Parameter | Type | Value |
@@ -527,7 +527,7 @@ Get comments entered in the WebSupervisor (these can be used for maintenance tas
 }]
 ```
 
-#### async_history(unit_guid: str, value_guids: str | None = None) ‑> list
+### async_history(unit_guid: str, value_guids: str | None = None) ‑> list
 
 Get the history of a value.
 
@@ -548,7 +548,7 @@ Get the history of a value.
 }]
 ```
 
-#### async_files(unitGuid: str) -> list
+### async_files(unitGuid: str) -> list
 
 Get the `list` of files stored on the controller
 
@@ -566,7 +566,7 @@ Get the `list` of files stored on the controller
 }]
 ```
 
-#### async_download(unit_guid: str, file_name: str, path: str = '') ‑> bool
+### async_download(unit_guid: str, file_name: str, path: str = '') ‑> bool
 
 Download a file from the controller to the current directory (or the directory specified in `path`). You can list the files using the `files` method.
 
@@ -580,7 +580,7 @@ Download a file from the controller to the current directory (or the directory s
 
 `bool`: Was the download succesful?
 
-#### async_command(unit_guid: str, command: str, mode: str | None = None) ‑> dict | None
+### async_command(unit_guid: str, command: str, mode: str | None = None) ‑> dict | None
 
 This allows controlling the genset. The available commands are `start`,`stop`,`faultReset`,`changeMcb` (toggle mains circuit breaker), `changeGcb` (toggle genset circuit breaker) and `changeMode`.
 For `changeMode` enter the `mode` parameter e.g. to `man` or `auto`
@@ -594,7 +594,7 @@ For `changeMode` enter the `mode` parameter e.g. to `man` or `auto`
 **Returns**
 API response in the `JSON` format
 
-#### async_get_unit_guid(name: str) ‑> str | None`
+### async_get_unit_guid(name: str) ‑> str | None`
 
 Find a genset by name. Return is unitGuid
 
@@ -602,7 +602,7 @@ Find a genset by name. Return is unitGuid
 | --- | --- | --- |
 | name | str | genset name
 
-#### async_get_value_guid(unit_guid: str, name: str) ‑> str | None
+### async_get_value_guid(unit_guid: str, name: str) ‑> str | None
 
 Find a value by name. Return valueGuid
 
