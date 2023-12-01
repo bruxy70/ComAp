@@ -41,7 +41,7 @@ token = identity.authenticate(CLIENT_ID, SECRET)
 
 *Returns*
 
-```json
+```yaml
 {
     'token_type': 'Bearer',
     'expires_in': 3599,
@@ -339,7 +339,7 @@ asyncio.run(authenticate())
 
 *Returns*
 
-```json
+```yaml
 {
     'token_type': 'Bearer',
     'expires_in': 3599,
