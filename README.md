@@ -63,17 +63,10 @@ These values are valid for 2 years. If you need new values, [Delete Application 
 
 Authenticate and return bearer token dictionary.
 
-**Parameters**
-
-client_id: `str`
-
-From ComAp customer portal
-Or generated on API Documentation test portal using Create application registration API
-
-**secret: `str`**
-
-From ComAp customer portal
-Or generated on API Documentation test portal using Create application secret API
+| Parameter | Type | Value |
+| --- | --- | --- |
+| client_id | `str` | From ComAp customer portal<br />Or generated on API Documentation test portal using Create application registration API
+| secret | `str` | From ComAp customer portal<br />Or generated on API Documentation test portal using Create application secret API
 
 **Returns**
 
@@ -361,17 +354,10 @@ These values are valid for 2 years. If you need new values, [Delete Application 
 
 Authenticate and return bearer token dictionary.
 
-**Parameters**
-
-client_id: `str`
-
-From ComAp customer portal
-Or generated on API Documentation test portal using Create application registration API
-
-**secret: `str`**
-
-From ComAp customer portal
-Or generated on API Documentation test portal using Create application secret API
+| Parameter | Type | Value |
+| --- | --- | --- |
+| client_id | `str` | From ComAp customer portal<br />Or generated on API Documentation test portal using Create application registration API
+| secret | `str` | From ComAp customer portal<br />Or generated on API Documentation test portal using Create application secret API
 
 **Returns**
 
