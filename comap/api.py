@@ -1,6 +1,11 @@
 """comap.api module
 
-A wrapper around ComAp API. Contains two classes:
+A wrapper around ComAp API, that allows easy automation of WebSupervisor tasks, such as downloading and analyzing data.
+The instructions for testing and examples are available on ComAp-API repository.
+
+There are two modules available - a simpler synchronous module `comap.api` and asynchronous module `comap.api_async`. The async module is recommended for use in production.
+
+This module contains two classes:
 
 - Identity - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
@@ -158,7 +163,7 @@ class Identity(ComApCloud):
         super().__init__(headers={"Content-Type": "application/json", COMAP_KEY: key})
 
     def authenticate(self, client_id: str, secret: str) -> dict | None:
-        """Authenticate and return bearer token dictinary.
+        """Authenticate and return bearer token dictionary.
 
         Parameters:
         -----------
@@ -409,7 +414,7 @@ class WSV(ComApCloud):
 
         Returns:
         --------
-        `bool`: Was the download succesfull?
+        `bool`: Was the download succesful?
         """
 
         response = self.get_api(
