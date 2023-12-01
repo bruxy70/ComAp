@@ -1,6 +1,4 @@
-# ComAp API
-
-A wrapper around ComAp API, that allows easy automation of [WebSupervisor](https://www.websupervisor.net/) tasks, such as downloading and analyzing data.
+This is a wrapper around ComAp API, that allows easy automation of [WebSupervisor](https://www.websupervisor.net/) tasks, such as downloading and analyzing data.
 The instructions for testing and examples are available on [ComAp-API repository](https://github.com/bruxy70/ComAp-API)
 
 There are two modules available:
@@ -61,7 +59,7 @@ These values are valid for 2 years. If you need new values, [Delete Application 
 
 ### Methods
 
-#### authenticate(self, client_id: str, secret: str) ‑> dict | None
+#### ==authenticate(self, client_id: str, secret: str) ‑> dict | None==
 
 Authenticate and return bearer token dictionary.
 
