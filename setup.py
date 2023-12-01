@@ -1,6 +1,6 @@
 import setuptools
 
-REVISION = '0.2.14'
+REVISION = '0.3.0'
 PROJECT_NAME = 'comap'
 PROJECT_AUTHORS = "Václav Chaloupka"
 PROJECT_EMAILS = 'vasek.chaloupka@hotmail.com'
@@ -12,7 +12,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name=PROJECT_NAME.lower(),
-    python_requires=">=3.6.0",
+    python_requires=">=3.11.0",
     version=REVISION,
     author=PROJECT_AUTHORS,
     author_email=PROJECT_EMAILS,
