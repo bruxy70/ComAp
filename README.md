@@ -3,7 +3,7 @@ The instructions for testing and examples are available on [ComAp-API repository
 
 There are two modules available:
 
-- a simpler synchronous module [`comap.api`](#comap-api)
+- a simpler synchronous module [`comap.api`](#comapapi)
 - and asynchronous module [`comap.api_async`](#comapapi_async)
 
 The async module is recommended for use in production.
