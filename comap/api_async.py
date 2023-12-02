@@ -7,9 +7,9 @@ There are two modules available - a simpler synchronous module `comap.api` and a
 
 This module contains two classes:
 
-- IdentityAsync - serves to authenticate to ComAp Cloud and obtain the token
-                  used in the individual APIs.
-- WSVAsync      - set of APIs to communicate with the WebSupervisor PRO
+- Identity  - serves to authenticate to ComAp Cloud and obtain the token
+              used in the individual APIs.
+- WSV       - set of APIs to communicate with the WebSupervisor PRO
 
 """
 import asyncio
@@ -36,7 +36,7 @@ class ErrorGettingData(Exception):
         return repr(self.value)
 
 
-class ComApCloudAsync:
+class ComApCloud:
     """The base class for both APIs"""
 
     def __init__(
@@ -57,7 +57,7 @@ class ComApCloudAsync:
         self._session = session
         self._login_id = login_id
 
-    async def async_get_api(
+    async def get_api(
         self,
         application: dict,
         api: str,
@@ -111,9 +111,9 @@ class ComApCloudAsync:
         except Exception as e:
             _LOGGER.error(f"API GET '%s' error %s", api, e)
             return None
-        return await response
+        return response
 
-    async def async_post_api(
+    async def post_api(
         self,
         application: dict,
         api: str,
@@ -145,7 +145,7 @@ class ComApCloudAsync:
         try:
             with async_timeout.timeout(TIMEOUT):
                 response = await self._session.post(
-                    _url, headers=self._headers, params=_body
+                    _url, headers=self._headers, json=_body
                 )
             if response.status != 200:
                 response_text = await response.text()
@@ -162,10 +162,10 @@ class ComApCloudAsync:
         except Exception as e:
             _LOGGER.error("API POST '%s' error %s", api, e)
             return None
-        return await response
+        return response
 
 
-class IdentityAsync(ComApCloudAsync):
+class Identity(ComApCloud):
     """ComAp Cloud Identity API wrapper"""
 
     def __init__(self, session: aiohttp.ClientSession, key: str) -> None:
@@ -183,7 +183,7 @@ class IdentityAsync(ComApCloudAsync):
             headers={"Content-Type": "application/json", COMAP_KEY: key},
         )
 
-    async def async_authenticate(self, client_id: str, secret: str) -> dict | None:
+    async def authenticate(self, client_id: str, secret: str) -> dict | None:
         """Authenticate and return bearer token dictionary.
 
         Parameters:
@@ -206,13 +206,13 @@ class IdentityAsync(ComApCloudAsync):
         }
         """
         body = {"clientId": client_id, "secret": secret}
-        response = await self.async_post_api(
+        response = await self.post_api(
             application=IDENTITY_URL, api="authenticate", payload=body
         )
-        return None if response is None else response.json()
+        return None if response is None else await response.json()
 
 
-class WSVAsync(ComApCloudAsync):
+class WSV(ComApCloud):
     """ComAp Cloud WSV API wrapper"""
 
     def __init__(
@@ -241,7 +241,7 @@ class WSVAsync(ComApCloudAsync):
             login_id=login_id,
         )
 
-    async def async_units(self) -> list:
+    async def units(self) -> list:
         """Get list of all units
 
         Returns:
@@ -253,10 +253,11 @@ class WSVAsync(ComApCloudAsync):
             'url': `str`
         }]
         """
-        response = await self.async_get_api(application=WSV_URL, api="units")
-        return [] if response is None else response.json()["units"]
+        response = await self.get_api(application=WSV_URL, api="units")
+        response_json = {"units":[]} if response is None else await response.json()
+        return response_json["units"]
 
-    async def async_values(
+    async def values(
         self, unit_guid: str, value_guids: str | None = None
     ) -> list:
         """Get Genset values
@@ -284,22 +285,23 @@ class WSVAsync(ComApCloudAsync):
         }]
         """
         if value_guids is None:
-            response = await self.async_get_api(
+            response = await self.get_api(
                 application=WSV_URL, api="values", unit_guid=unit_guid
             )
         else:
-            response = await self.async_get_api(
+            response = await self.get_api(
                 application=WSV_URL,
                 api="values",
                 unit_guid=unit_guid,
                 payload={"valueGuids": value_guids},
             )
-        values = [] if response is None else response.json()["values"]
+        response_json = {"values":[]} if response is None else await response.json()
+        values = response_json["values"]
         for value in values:
             value["timeStamp"] = datetime.fromisoformat(value["timeStamp"])
         return values
 
-    async def async_info(self, unit_guid: str) -> dict:
+    async def info(self, unit_guid: str) -> dict:
         """Get Genset info
 
         Parameters:
@@ -328,12 +330,12 @@ class WSVAsync(ComApCloudAsync):
             'longitude': `number`}
         }
         """
-        response = await self.async_get_api(
+        response = await self.get_api(
             application=WSV_URL, api="info", unit_guid=unit_guid
         )
-        return [] if response is None else response.json()
+        return {} if response is None else await response.json()
 
-    async def async_comments(self, unit_guid: str) -> list:
+    async def comments(self, unit_guid: str) -> list:
         """Get Genset comments
 
         Parameters:
@@ -352,15 +354,16 @@ class WSVAsync(ComApCloudAsync):
             "active": `Boolean`
         }]
         """
-        response = await self.async_get_api(
+        response = await self.get_api(
             application=WSV_URL, api="comments", unit_guid=unit_guid
         )
-        comments = [] if response is None else response.json()["comments"]
+        response_json = {"comments":[]} if response is None else await response.json()
+        comments = response_json["comments"]
         for comment in comments:
             comment["date"] = datetime.fromisoformat(comment["date"])
         return comments
 
-    async def async_history(
+    async def history(
         self,
         unit_guid: str,
         _from: str | None = None,
@@ -397,17 +400,18 @@ class WSVAsync(ComApCloudAsync):
             payload["to"] = _to
         if value_guids is not None:
             payload["valueGuids"] = value_guids
-        response = await self.async_get_api(
+        response = await self.get_api(
             application=WSV_URL, api="history", unit_guid=unit_guid, payload=payload
         )
-        values = [] if response is None else response.json()["values"]
+        response_json = {"values":[]} if response is None else await response.json()
+        values = response_json["values"]
         for value in values:
             for entry in value["history"]:
                 entry["validFrom"] = datetime.fromisoformat(entry["validFrom"])
                 entry["validTo"] = datetime.fromisoformat(entry["validTo"])
         return values
 
-    async def async_files(self, unit_guid: str) -> list:
+    async def files(self, unit_guid: str) -> list:
         """Get Genset files
 
         Parameters:
@@ -424,15 +428,16 @@ class WSVAsync(ComApCloudAsync):
             'generated': `datetime`
         }]
         """
-        response = await self.async_get_api(
+        response = await self.get_api(
             application=WSV_URL, api="files", unit_guid=unit_guid
         )
-        files = [] if response is None else response.json()["files"]
+        response_json = {"files":[]} if response is None else await response.json()
+        files = response_json["files"]
         for file in files:
             file["generated"] = datetime.fromisoformat(file["generated"])
         return files
 
-    async def async_download(
+    async def download(
         self, unit_guid: str, file_name: str, path: str = ""
     ) -> bool:
         """Download a file with 'file_name', store it in the 'path'
@@ -451,7 +456,7 @@ class WSVAsync(ComApCloudAsync):
         `bool`: Was the download succesful?
         """
 
-        response = await self.async_get_api(
+        response = await self.get_api(
             application=WSV_URL,
             api="download",
             unit_guid=unit_guid,
@@ -468,9 +473,9 @@ class WSVAsync(ComApCloudAsync):
             return False
         return True
 
-    async def async_command(
+    async def command(
         self, unit_guid: str, command: str, mode: str | None = None
-    ) -> dict | None:
+    ) -> dict:
         """Send a command
 
         Parameters:
@@ -490,12 +495,12 @@ class WSVAsync(ComApCloudAsync):
         body = {"command": command}
         if mode is not None:
             body["mode"] = mode
-        response = await self.async_get_api(
+        response = await self.get_api(
             application=WSV_URL, api="command", unit_guid=unit_guid, payload=body
         )
-        return None if response is None else response.json()
+        return {} if response is None else await response.json()
 
-    async def async_get_unit_guid(self, name: str) -> str | None:
+    async def get_unit_guid(self, name: str) -> str | None:
         """Call units API and find GUID for a unit by name
 
         Parameters:
@@ -508,12 +513,12 @@ class WSVAsync(ComApCloudAsync):
         unitGuid (`str`) or `None`
         """
         unit = next(
-            (unit for unit in await self.async_units() if unit["name"].find(name) >= 0),
+            (unit for unit in await self.units() if unit["name"].find(name) >= 0),
             None,
         )
         return None if unit is None else unit["unitGuid"]
 
-    async def async_get_value_guid(self, unit_guid: str, name: str) -> str | None:
+    async def get_value_guid(self, unit_guid: str, name: str) -> str | None:
         """Call values API and find GUID for a value by name
 
         Parameters:
@@ -531,7 +536,7 @@ class WSVAsync(ComApCloudAsync):
         value = next(
             (
                 value
-                for value in await self.async_values(unit_guid)
+                for value in await self.values(unit_guid)
                 if value["name"].find(name) >= 0
             ),
             None,

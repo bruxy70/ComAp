@@ -301,7 +301,7 @@ class WSV(ComApCloud):
         }
         """
         response = self.get_api(application=WSV_URL, api="info", unit_guid=unit_guid)
-        return [] if response is None else response.json()
+        return {} if response is None else response.json()
 
     def comments(self, unit_guid: str) -> list:
         """Get Genset comments
@@ -436,7 +436,7 @@ class WSV(ComApCloud):
 
     def command(
         self, unit_guid: str, command: str, mode: str | None = None
-    ) -> dict | None:
+    ) -> dict:
         """Send a command
 
         Parameters:
@@ -458,7 +458,7 @@ class WSV(ComApCloud):
         response = self.post_api(
             application=WSV_URL, api="command", unit_guid=unit_guid, payload=body
         )
-        return None if response is None else response.json()
+        return {} if response is None else response.json()
 
     def get_unit_guid(self, name: str) -> str | None:
         """Call units API and find GUID for a unit by name
