@@ -305,7 +305,7 @@ This module contains two classes:
 
 - [Identity](#class-identitysession-aiohttpclientsession-key-str) - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
-- [WSV](#class-wsvasession-aiohttpclientsession-login_idstr-keystr-tokenstr) - set of APIs to communicate with the WebSupervisor PRO
+- [WSV](#class-wsvsession-aiohttpclientsession-login_id-str-key-str-token-str) - set of APIs to communicate with the WebSupervisor PRO
 
 ---
 
