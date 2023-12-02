@@ -3,7 +3,7 @@ The instructions for testing and examples are available on [ComAp-API repository
 
 There are two modules available:
 
-- a simpler synchronous module [`comap.api`](#comap-api)
+- a simpler synchronous module [`comap.api`](#comapapi)
 - and asynchronous module [`comap.api_async`](#comapapi_async)
 
 The async module is recommended for use in production.
@@ -18,7 +18,7 @@ This module contains two classes:
 
 - [Identity](#class-identitykey-str) - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
-- [WSV](#class-wsvlogin_id-str-key-str-token-str)      - set of APIs to communicate with the WebSupervisor PRO
+- [WSV](#class-wsvlogin_idstr-keystr-tokenstr) - set of APIs to communicate with the WebSupervisor PRO
 
 ---
 
@@ -35,6 +35,7 @@ CLIENT_ID = ... # get the id from the a repository
 SECRET = ...    # get the secret from a key repository
 COMAP_KEY = ... # get the key from a key repository
 
+# Use the ComAp Cloud Identity API to get the Bearer token
 identity = api.Identity(COMAP_KEY)
 token = identity.authenticate(CLIENT_ID, SECRET)
 ```
@@ -103,7 +104,9 @@ from comap import api
 LOGIN_ID = ... # user name
 
 if token is not None:
+    # Create WSV instance to call APIs
     wsv = api.WSV(LOGIN_ID, COMAP_KEY, token['access_token'])
+    # Call API to get the list of controller units
     units = wsv.units()
     for unit in units:
         print(f'{unit["unitGuid"]} : {unit["name"]}')
@@ -295,25 +298,25 @@ Find a value by name. Return valueGuid
 
 # comap.api_async
 
-Same as `comap.api`, but each method starting with `async_`, and include a session parameter (for example `async_units(session)`, or `values(session,unitGuid,valueGuids=None)`
+Same as `comap.api`, but uses a HTTPS pool session handler (for example `units(session)`, or `values(session,unitGuid,valueGuids=None)`
 Check the example of use in [async example](https://github.com/bruxy70/ComAp-API/tree/development/simple-examples-async)
 
 This module contains two classes:
 
-- [IdentityAsync](#class-identityasynckey-str) - serves to authenticate to ComAp Cloud and obtain the token
+- [Identity](#class-identitysession-aiohttpclientsession-key-str) - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
-- [WSVAsync](#class-wsvasynclogin_id-str-key-str-token-str)      - set of APIs to communicate with the WebSupervisor PRO
+- [WSV](#class-wsvsession-aiohttpclientsession-login_id-str-key-str-token-str) - set of APIs to communicate with the WebSupervisor PRO
 
 ---
 
-## Class: IdentityAsync(session: aiohttp.ClientSession, key: str)
+## Class: Identity(session: aiohttp.ClientSession, key: str)
 
-Use `ComAp-Key`, `client_id` and `secret` to obtain the ``Bearer Token``, that is needed to authenticate to the WSV API. It uses an HTTPS pool instance handler `session`.
+Use `ComAp-Key`, `client_id` and `secret` to obtain the ``Bearer Token``, that is needed to authenticate to the WSV API. It uses an HTTPS pool session handler `session`.
 
 *Example:*
 
 ```python
-from comap import api
+from comap import api_async
 import aiohttp
 
 CLIENT_ID = ... # get the id from the a repository
@@ -321,10 +324,9 @@ SECRET = ...    # get the secret from a key repository
 COMAP_KEY = ... # get the key from a key repository
 
 async def authenticate() -> str:
-    session = aiohttp.ClientSession(raise_for_status=True)
-    identity = api.IdentityAsync(session, COMAP_KEY)
-    token = await identity.async_authenticate(CLIENT_ID, SECRET)
-    await session.close()
+    async with aiohttp.ClientSession() as session:
+        identity = api_async.Identity(session, COMAP_KEY)
+        token = await identity.authenticate(CLIENT_ID, SECRET)
     return token
 
 asyncio.run(authenticate())
@@ -350,7 +352,7 @@ Until then, you can generate them from the API documentation using the "Try it" 
 
 These values are valid for 2 years. If you need new values, [Delete Application Registration](https://portal.websupervisor.net/docs/services/comap-cloud-identity/operations/application-delete?) and create new ones.
 
-### async_authenticate(self, client_id: str, secret: str) ‑> dict | None
+### authenticate(self, client_id: str, secret: str) ‑> dict | None
 
 Authenticate and return bearer token dictionary.
 
@@ -374,7 +376,7 @@ The bearer access token `dict` or `None` if failed.
 
 ---
 
-## Class: WSVAsync(session: aiohttp.ClientSession, login_id: str, key: str, token: str)
+## Class: WSV(session: aiohttp.ClientSession, login_id: str, key: str, token: str)
 
 ComAp Cloud WSV API wrapper.
 `session` is the HTTPS pool handler.
@@ -388,7 +390,7 @@ ComAp Cloud WSV API wrapper.
 *Example:*
 
 ```python
-from comap import api
+from comap import api_async
 import aiohttp
 
 CLIENT_ID = ... # get the id from the a repository
@@ -396,23 +398,26 @@ SECRET = ...    # get the secret from a key repository
 COMAP_KEY = ... # get the key from a key repository
 LOGIN_ID = ...  # user name
 
-async def print_units() -> str:
-    session = aiohttp.ClientSession(raise_for_status=True)
-    identity = api.IdentityAsync(session, COMAP_KEY)
-    token = await identity.async_authenticate(CLIENT_ID, SECRET)
-    if token is not None:
-        wsv = api.WSVAsync(
-                session, 
-                LOGIN_ID, 
-                COMAP_KEY, 
-                token['access_token']
-        )
-        units = await wsv.async_units()
-        for unit in units:
-            print(f'{unit["unitGuid"]} : {unit["name"]}')
-    await session.close()
+async def main() -> None:
+    async with aiohttp.ClientSession() as session:
+        # Use the ComAp Cloud Identity API to get the Bearer token
+        identity = api_async.Identity(session, COMAP_KEY)
+        token = await identity.authenticate(CLIENT_ID, SECRET)
 
-asyncio.run(print_units())
+        if token is not None:
+            # Create WSV instance to call APIs
+            wsv = api_async.WSV(
+                    session, 
+                    LOGIN_ID, 
+                    COMAP_KEY, 
+                    token['access_token']
+            )
+            # Call API to get the list of controller units
+            units = await wsv.units()
+            for unit in units:
+                print(f'{unit["unitGuid"]} : {unit["name"]}')
+
+asyncio.run(main())
 ```
 
 *Returns*
@@ -423,7 +428,7 @@ genset84f8*********redacted*********** : unit2 name
 genset38ed*********redacted*********** : unit3 name
 ```
 
-### async_units() -> list
+### units() -> list
 
 Get a `list` of units with their unitGuid
 
@@ -437,7 +442,7 @@ Get a `list` of units with their unitGuid
 }]
 ```
 
-### async_values(unit_guid: str, value_guids: str | None = None) ‑> list
+### values(unit_guid: str, value_guids: str | None = None) ‑> list
 
 Get a `list` of values. It is recommended to specify a comma-separated list of `valueGuids` to filter the result.
 You can import VALUE_GUID from `comap.constants` to get GUIDs for the most common values. Or call the method without GUID to get all values available in the controller, including their GUIDs.
@@ -462,7 +467,7 @@ You can import VALUE_GUID from `comap.constants` to get GUIDs for the most commo
 }]
 ```
 
-### async_info(unitGuid: str) -> list
+### info(unitGuid: str) -> list
 
 Get information about the unit
 
@@ -494,7 +499,7 @@ Get information about the unit
 }
 ```
 
-### async_comments(unitGuid: str) -> list
+### comments(unitGuid: str) -> list
 
 Get comments entered in the WebSupervisor (these can be used for maintenance tasks)
 | Parameter | Type | Value |
@@ -513,7 +518,7 @@ Get comments entered in the WebSupervisor (these can be used for maintenance tas
 }]
 ```
 
-### async_history(unit_guid: str, value_guids: str | None = None) ‑> list
+### history(unit_guid: str, value_guids: str | None = None) ‑> list
 
 Get the history of a value.
 
@@ -534,7 +539,7 @@ Get the history of a value.
 }]
 ```
 
-### async_files(unitGuid: str) -> list
+### files(unitGuid: str) -> list
 
 Get the `list` of files stored on the controller
 
@@ -552,7 +557,7 @@ Get the `list` of files stored on the controller
 }]
 ```
 
-### async_download(unit_guid: str, file_name: str, path: str = '') ‑> bool
+### download(unit_guid: str, file_name: str, path: str = '') ‑> bool
 
 Download a file from the controller to the current directory (or the directory specified in `path`). You can list the files using the `files` method.
 
@@ -566,7 +571,7 @@ Download a file from the controller to the current directory (or the directory s
 
 `bool`: Was the download succesful?
 
-### async_command(unit_guid: str, command: str, mode: str | None = None) ‑> dict | None
+### command(unit_guid: str, command: str, mode: str | None = None) ‑> dict | None
 
 This allows controlling the genset. The available commands are `start`,`stop`,`faultReset`,`changeMcb` (toggle mains circuit breaker), `changeGcb` (toggle genset circuit breaker) and `changeMode`.
 For `changeMode` enter the `mode` parameter e.g. to `man` or `auto`
@@ -580,7 +585,7 @@ For `changeMode` enter the `mode` parameter e.g. to `man` or `auto`
 **Returns**
 API response in the `JSON` format
 
-### async_get_unit_guid(name: str) ‑> str | None`
+### get_unit_guid(name: str) ‑> str | None`
 
 Find a genset by name. Return is unitGuid
 
@@ -588,7 +593,7 @@ Find a genset by name. Return is unitGuid
 | --- | --- | --- |
 | name | str | genset name
 
-### async_get_value_guid(unit_guid: str, name: str) ‑> str | None
+### get_value_guid(unit_guid: str, name: str) ‑> str | None
 
 Find a value by name. Return valueGuid
 
