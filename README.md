@@ -18,7 +18,7 @@ This module contains two classes:
 
 - [Identity](#class-identitykey-str) - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
-- [WSV](#class-wsvlogin_id-str-key-str-token-str) - set of APIs to communicate with the WebSupervisor PRO
+- [WSV](#class-wsvlogin_idstr-keystr-tokenstr) - set of APIs to communicate with the WebSupervisor PRO
 
 ---
 
@@ -305,7 +305,7 @@ This module contains two classes:
 
 - [Identity](#class-identitysession-aiohttpclientsession-key-str) - serves to authenticate to ComAp Cloud and obtain the token
              used in the individual APIs.
-- [WSV](#class-wsvasession-aiohttpclientsession-login_id-str-key-str-token-str) - set of APIs to communicate with the WebSupervisor PRO
+- [WSV](#class-wsvasession-aiohttpclientsession-login_idstr-keystr-tokenstr) - set of APIs to communicate with the WebSupervisor PRO
 
 ---
 
@@ -376,7 +376,7 @@ The bearer access token `dict` or `None` if failed.
 
 ---
 
-## Class: WSVA(session: aiohttp.ClientSession, login_id: str, key: str, token: str)
+## Class: WSV(session: aiohttp.ClientSession, login_id: str, key: str, token: str)
 
 ComAp Cloud WSV API wrapper.
 `session` is the HTTPS pool handler.
