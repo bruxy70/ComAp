@@ -495,7 +495,7 @@ class WSV(ComApCloud):
         body = {"command": command}
         if mode is not None:
             body["mode"] = mode
-        response = await self.get_api(
+        response = await self.post_api(
             application=WSV_URL, api="command", unit_guid=unit_guid, payload=body
         )
         return {} if response is None else await response.json()
