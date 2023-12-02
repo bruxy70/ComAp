@@ -35,6 +35,7 @@ CLIENT_ID = ... # get the id from the a repository
 SECRET = ...    # get the secret from a key repository
 COMAP_KEY = ... # get the key from a key repository
 
+# Use the ComAp Cloud Identity API to get the Bearer token
 identity = api.Identity(COMAP_KEY)
 token = identity.authenticate(CLIENT_ID, SECRET)
 ```
@@ -103,7 +104,9 @@ from comap import api
 LOGIN_ID = ... # user name
 
 if token is not None:
+    # Create WSV instance to call APIs
     wsv = api.WSV(LOGIN_ID, COMAP_KEY, token['access_token'])
+    # Call API to get the list of controller units
     units = wsv.units()
     for unit in units:
         print(f'{unit["unitGuid"]} : {unit["name"]}')
@@ -321,10 +324,9 @@ SECRET = ...    # get the secret from a key repository
 COMAP_KEY = ... # get the key from a key repository
 
 async def authenticate() -> str:
-    session = aiohttp.ClientSession(raise_for_status=True)
-    identity = api.IdentityAsync(session, COMAP_KEY)
-    token = await identity.async_authenticate(CLIENT_ID, SECRET)
-    await session.close()
+    async with aiohttp.ClientSession() as session:
+        identity = api.IdentityAsync(session, COMAP_KEY)
+        token = await identity.async_authenticate(CLIENT_ID, SECRET)
     return token
 
 asyncio.run(authenticate())
@@ -397,20 +399,23 @@ COMAP_KEY = ... # get the key from a key repository
 LOGIN_ID = ...  # user name
 
 async def print_units() -> str:
-    session = aiohttp.ClientSession(raise_for_status=True)
-    identity = api.IdentityAsync(session, COMAP_KEY)
-    token = await identity.async_authenticate(CLIENT_ID, SECRET)
-    if token is not None:
-        wsv = api.WSVAsync(
-                session, 
-                LOGIN_ID, 
-                COMAP_KEY, 
-                token['access_token']
-        )
-        units = await wsv.async_units()
-        for unit in units:
-            print(f'{unit["unitGuid"]} : {unit["name"]}')
-    await session.close()
+    async with aiohttp.ClientSession() as session:
+        # Use the ComAp Cloud Identity API to get the Bearer token
+        identity = api.IdentityAsync(session, COMAP_KEY)
+        token = await identity.async_authenticate(CLIENT_ID, SECRET)
+
+        if token is not None:
+            # Create WSV instance to call APIs
+            wsv = api.WSVAsync(
+                    session, 
+                    LOGIN_ID, 
+                    COMAP_KEY, 
+                    token['access_token']
+            )
+            # Call API to get the list of controller units
+            units = await wsv.async_units()
+            for unit in units:
+                print(f'{unit["unitGuid"]} : {unit["name"]}')
 
 asyncio.run(print_units())
 ```
