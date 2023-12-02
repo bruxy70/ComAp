@@ -398,7 +398,7 @@ SECRET = ...    # get the secret from a key repository
 COMAP_KEY = ... # get the key from a key repository
 LOGIN_ID = ...  # user name
 
-async def print_units() -> str:
+async def main() -> None:
     async with aiohttp.ClientSession() as session:
         # Use the ComAp Cloud Identity API to get the Bearer token
         identity = api.IdentityAsync(session, COMAP_KEY)
@@ -417,7 +417,7 @@ async def print_units() -> str:
             for unit in units:
                 print(f'{unit["unitGuid"]} : {unit["name"]}')
 
-asyncio.run(print_units())
+asyncio.run(main())
 ```
 
 *Returns*
