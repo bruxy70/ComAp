@@ -254,12 +254,10 @@ class WSV(ComApCloud):
         }]
         """
         response = await self.get_api(application=WSV_URL, api="units")
-        response_json = {"units":[]} if response is None else await response.json()
+        response_json = {"units": []} if response is None else await response.json()
         return response_json["units"]
 
-    async def values(
-        self, unit_guid: str, value_guids: str | None = None
-    ) -> list:
+    async def values(self, unit_guid: str, value_guids: str | None = None) -> list:
         """Get Genset values
 
         Parameters:
@@ -295,7 +293,7 @@ class WSV(ComApCloud):
                 unit_guid=unit_guid,
                 payload={"valueGuids": value_guids},
             )
-        response_json = {"values":[]} if response is None else await response.json()
+        response_json = {"values": []} if response is None else await response.json()
         values = response_json["values"]
         for value in values:
             value["timeStamp"] = datetime.fromisoformat(value["timeStamp"])
@@ -357,7 +355,7 @@ class WSV(ComApCloud):
         response = await self.get_api(
             application=WSV_URL, api="comments", unit_guid=unit_guid
         )
-        response_json = {"comments":[]} if response is None else await response.json()
+        response_json = {"comments": []} if response is None else await response.json()
         comments = response_json["comments"]
         for comment in comments:
             comment["date"] = datetime.fromisoformat(comment["date"])
@@ -440,15 +438,13 @@ class WSV(ComApCloud):
         response = await self.get_api(
             application=WSV_URL, api="files", unit_guid=unit_guid
         )
-        response_json = {"files":[]} if response is None else await response.json()
+        response_json = {"files": []} if response is None else await response.json()
         files = response_json["files"]
         for file in files:
             file["generated"] = datetime.fromisoformat(file["generated"])
         return files
 
-    async def download(
-        self, unit_guid: str, file_name: str, path: str = ""
-    ) -> bool:
+    async def download(self, unit_guid: str, file_name: str, path: str = "") -> bool:
         """Download a file with 'file_name', store it in the 'path'
 
         Parameters:

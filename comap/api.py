@@ -444,9 +444,7 @@ class WSV(ComApCloud):
             return False
         return True
 
-    def command(
-        self, unit_guid: str, command: str, mode: str | None = None
-    ) -> dict:
+    def command(self, unit_guid: str, command: str, mode: str | None = None) -> dict:
         """Send a command
 
         Parameters:
