@@ -367,10 +367,20 @@ class WSV(ComApCloud):
             payload["to"] = _to
         if value_guids is not None:
             payload["valueGuids"] = value_guids
-        response = self.get_api(
-            application=WSV_URL, api="history", unit_guid=unit_guid, payload=payload
-        )
-        values = [] if response is None else response.json()["values"]
+        values = []
+        offset = 0
+        while True:
+            payload["offset"] = offset
+            response = self.get_api(
+                application=WSV_URL, api="history", unit_guid=unit_guid, payload=payload
+            )
+            if response is None:
+                break
+            response_json = response.json()
+            values.append(response_json["values"])
+            if response_json["nextOffset"] is None:
+                break
+            offset = response_json["nextOffset"]
         for value in values:
             for entry in value["history"]:
                 entry["validFrom"] = datetime.fromisoformat(entry["validFrom"])
